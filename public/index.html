@@ -29,7 +29,29 @@
         <!-- أزرار التنقل السحرية بين الإدارة والزبائن -->
         <div class="grid grid-cols-2 gap-2 mb-8 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
             <button onclick="switchView('client')" id="btnClientView" class="w-full text-sm font-bold py-3 rounded-lg bg-teal-500 text-slate-950 shadow-lg transition duration-350 cursor-pointer">🎯 بوابة الزبائن والاستفسارات</button>
-            <button onclick="switchView('shop')" id="btnShopView" class="w-full text-sm font-medium py-3 rounded-lg text-slate-400 hover:text-white transition duration-350 cursor-pointer">🔒 لوحة تحكم المحل والحسابات</button>
+            <button onclick="tryAccessShop()" id="btnShopView" class="w-full text-sm font-medium py-3 rounded-lg text-slate-400 hover:text-white transition duration-350 cursor-pointer">🔒 لوحة تحكم المحل والحسابات</button>
+        </div>
+
+        <!-- ======================= 🔐 نافذة تسجيل الدخول المنبثقة ======================= -->
+        <div id="loginModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div class="bg-slate-900 border border-teal-500/30 p-6 rounded-2xl w-full max-w-sm neon-border">
+                <h3 class="text-xl font-bold text-teal-400 text-center mb-4 flex items-center justify-center gap-2">🔐 تسجيل دخول الإدارة</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1 font-medium">اسم المستخدم:</label>
+                        <input type="text" id="usernameInput" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" placeholder="Username">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1 font-medium">كلمة المرور:</label>
+                        <input type="password" id="passwordInput" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" placeholder="••••••••">
+                    </div>
+                    <p id="loginError" class="hidden text-xs text-rose-500 text-center font-bold">❌ اسم المستخدم أو كلمة المرور غير صحيحة!</p>
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button onclick="checkLogin()" class="bg-teal-500 text-slate-950 font-bold p-2.5 rounded-xl hover:bg-teal-400 transition cursor-pointer text-sm">دخول</button>
+                        <button onclick="closeLoginModal()" class="bg-slate-800 text-slate-400 p-2.5 rounded-xl hover:bg-slate-700 transition cursor-pointer text-sm">إلغاء</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ======================= 1. واجهة العميل الخارجية ======================= -->
@@ -85,7 +107,10 @@
 
             <!-- تسجيل جهاز مباشر تم استلامه في طه فون -->
             <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
-                <h3 class="text-lg font-bold text-teal-400 mb-4">📥 تسجيل جهاز مستلم داخل المحل</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-teal-400">📥 تسجيل جهاز مستلم داخل المحل</h3>
+                    <button onclick="logoutShop()" class="text-xs font-bold bg-rose-600/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-xl hover:bg-rose-600 hover:text-white transition cursor-pointer">🚪 تسجيل خروج</button>
+                </div>
                 <form id="deviceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input type="text" id="customerName" placeholder="اسم الزبون" class="p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none" required>
                     <input type="text" id="phoneModel" placeholder="نوع وموديل الهاتف" class="p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none" required>
@@ -117,6 +142,45 @@
     <script>
         let allDevices = [];
         let currentView = 'client';
+        let isLoggedIn = false; // متغير لتتبع حالة تسجيل الدخول
+
+        // دالة فحص الوصول للوحة التحكم
+        function tryAccessShop() {
+            if (isLoggedIn) {
+                switchView('shop');
+            } else {
+                document.getElementById('loginModal').classList.remove('hidden');
+                document.getElementById('usernameInput').focus();
+            }
+        }
+
+        // إغلاق نافذة تسجيل الدخول
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        // التحقق من صحة الحساب المكتوب
+        function checkLogin() {
+            const user = document.getElementById('usernameInput').value;
+            const pass = document.getElementById('passwordInput').value;
+
+            if (user === 'no7name' && pass === '102030nnn') {
+                isLoggedIn = true;
+                closeLoginModal();
+                switchView('shop');
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        // تسجيل الخروج والقفل من جديد
+        function logoutShop() {
+            isLoggedIn = false;
+            switchView('client');
+        }
 
         function switchView(view) {
             currentView = view;
@@ -324,6 +388,13 @@
             const f = allDevices.filter(d => d.customer_name.toLowerCase().includes(q) || d.phone_model.toLowerCase().includes(q) || d.notes.toLowerCase().includes(q));
             renderShopDevices(f);
         }
+
+        // تفعيل النقر بزر Enter لتسجيل الدخول الفوري
+        document.getElementById('passwordInput').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                checkLogin();
+            }
+        });
 
         loadDevices();
     </script>
