@@ -5,27 +5,37 @@ const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
-// تم ربط الحساب بالسيرفر السحابي الخاص بك بنجاح 🚀
+// تم تحديث الروابط والمفاتيح الجديدة باحترافية وبشكل صحيح 🚀
 const SUPABASE_URL = 'https://buxnqmmbecgtnckygudx.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1eG5xbW1iZWNndG5ja3lndWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTA3MjUsImV4cCI6MjA5NjA2NjcyNX0.jqlt5oguM2O9Bh-6rdb61XrqkoOKss8qxUGu-ZixcL0';
+const SUPABASE_KEY = 'sb_publishable_j6LI8T5izgXzJawJ_xzvwg_9VnoSE18';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// دالة مساعدة للاتصال بـ Supabase
+// دالة مساعدة معالجة ومستقرة للاتصال بـ Supabase
 async function supabaseRequest(endpoint, method = 'GET', body = null) {
-    const options = {
-        method,
-        headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
+    try {
+        const options = {
+            method,
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': method === 'POST' || method === 'PATCH' ? 'return=representation' : ''
+            }
+        };
+        if (body) options.body = JSON.stringify(body);
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error(`Supabase Error [${res.status}]:`, errText);
+            return null;
         }
-    };
-    if (body) options.body = JSON.stringify(body);
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
-    return await res.json();
+        return await res.json();
+    } catch (err) {
+        console.error("Fetch Exception:", err);
+        return null;
+    }
 }
 
 // جلب البيانات والحسابات الأسبوعية من السحاب
@@ -33,7 +43,8 @@ app.get('/api/devices', async (req, res) => {
     try {
         const devices = await supabaseRequest('devices?select=*') || [];
         const config = await supabaseRequest('shop_config?id=eq.1&select=*') || [];
-        const withdrawn = config[0]?.technician_withdrawn || 0;
+        
+        const withdrawn = (config && config[0]) ? parseFloat(config[0].technician_withdrawn) || 0 : 0;
 
         let totalSoftwareIncome = 0;
         let totalHardwareIncome = 0;
@@ -46,7 +57,7 @@ app.get('/api/devices', async (req, res) => {
                 const price = parseFloat(dev.cost) || 0;
                 const costOut = parseFloat(dev.extra_cost) || 0;
                 const netProfit = price - costOut;
-                const devDate = parseInt(dev.id); 
+                const devDate = parseInt(dev.id) || Date.now(); 
 
                 if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض') {
                     if (dev.is_paid) {
@@ -90,7 +101,7 @@ app.post('/api/withdraw', async (req, res) => {
     try {
         const { amount } = req.body;
         const config = await supabaseRequest('shop_config?id=eq.1&select=*') || [];
-        const currentWithdrawn = config[0]?.technician_withdrawn || 0;
+        const currentWithdrawn = (config && config[0]) ? parseFloat(config[0].technician_withdrawn) || 0 : 0;
         const newTotal = currentWithdrawn + (parseFloat(amount) || 0);
 
         await supabaseRequest('shop_config?id=eq.1', 'PATCH', { technician_withdrawn: newTotal });
@@ -132,6 +143,9 @@ app.put('/api/devices/:id', async (req, res) => {
         const { id } = req.params;
         const updateFields = req.body;
         
+        if (updateFields.cost !== undefined) updateFields.cost = parseFloat(updateFields.cost) || 0;
+        if (updateFields.extra_cost !== undefined) updateFields.extra_cost = parseFloat(updateFields.extra_cost) || 0;
+
         await supabaseRequest(`devices?id=eq.${id}`, 'PATCH', updateFields);
         res.json({ message: "تم التعديل على السحاب بنجاح" });
     } catch (err) {
