@@ -32,23 +32,42 @@
             <button onclick="tryAccessShop()" id="btnShopView" class="w-full text-sm font-medium py-3 rounded-lg text-slate-400 hover:text-white transition duration-350 cursor-pointer">🔒 لوحة تحكم المحل والحسابات</button>
         </div>
 
-        <!-- ======================= 🔐 نافذة تسجيل الدخول المنبثقة ======================= -->
+        <!-- ======================= 🔐 نافذة تسجيل الدخول ======================= -->
         <div id="loginModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
             <div class="bg-slate-900 border border-teal-500/30 p-6 rounded-2xl w-full max-w-sm neon-border">
-                <h3 class="text-xl font-bold text-teal-400 text-center mb-4 flex items-center justify-center gap-2">🔐 تسجيل دخول الإدارة</h3>
+                <h3 class="text-xl font-bold text-teal-400 text-center mb-4">🔐 تسجيل دخول الإدارة</h3>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1 font-medium">اسم المستخدم:</label>
-                        <input type="text" id="usernameInput" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" placeholder="Username">
+                    <input type="text" id="usernameInput" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none" placeholder="اسم المستخدم">
+                    <input type="password" id="passwordInput" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none" placeholder="كلمة المرور">
+                    <p id="loginError" class="hidden text-xs text-rose-500 text-center font-bold">❌ الحساب غير صحيح!</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="checkLogin()" class="bg-teal-500 text-slate-950 font-bold p-2.5 rounded-xl text-sm cursor-pointer">دخول</button>
+                        <button onclick="closeLoginModal()" class="bg-slate-800 text-slate-400 p-2.5 rounded-xl text-sm cursor-pointer">إلغاء</button>
                     </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1 font-medium">كلمة المرور:</label>
-                        <input type="password" id="passwordInput" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" placeholder="••••••••">
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= 📝 نافذة التعديل الشامل والمنسي للملفات ======================= -->
+        <div id="editModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+                <h3 class="text-lg font-bold text-teal-400 mb-4">🛠️ تعديل بيانات وتفاصيل الجهاز</h3>
+                <input type="hidden" id="editDevId">
+                <div class="space-y-3">
+                    <input type="text" id="editCustomerName" placeholder="اسم الزبون" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none">
+                    <input type="text" id="editPhoneModel" placeholder="موديل الهاتف" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none">
+                    <select id="editIssueType" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none">
+                        <option value="سوفتوير">سوفتوير</option>
+                        <option value="هاردوير">هاردوير</option>
+                    </select>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="editCost" placeholder="المبلغ المطلوب ₪" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none">
+                        <input type="number" id="editExtraCost" placeholder="تكلفة خارجية ₪" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none">
                     </div>
-                    <p id="loginError" class="hidden text-xs text-rose-500 text-center font-bold">❌ اسم المستخدم أو كلمة المرور غير صحيحة!</p>
+                    <textarea id="editNotes" placeholder="ملاحظات الصيانة المنسية..." class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none" rows="3"></textarea>
                     <div class="grid grid-cols-2 gap-2 pt-2">
-                        <button onclick="checkLogin()" class="bg-teal-500 text-slate-950 font-bold p-2.5 rounded-xl hover:bg-teal-400 transition cursor-pointer text-sm">دخول</button>
-                        <button onclick="closeLoginModal()" class="bg-slate-800 text-slate-400 p-2.5 rounded-xl hover:bg-slate-700 transition cursor-pointer text-sm">إلغاء</button>
+                        <button onclick="saveDeviceEdit()" class="bg-teal-500 text-slate-950 font-bold p-2.5 rounded-xl text-xs cursor-pointer">حفظ التغييرات</button>
+                        <button onclick="closeEditModal()" class="bg-slate-800 text-slate-400 p-2.5 rounded-xl text-xs cursor-pointer">إلغاء</button>
                     </div>
                 </div>
             </div>
@@ -58,58 +77,69 @@
         <div id="clientSection" class="space-y-6">
             <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl">
                 <h2 class="text-xl font-bold text-teal-300 flex items-center gap-2 mb-2">📱 أرسل عطل جهازك من بيتك أو شغلك</h2>
-                <p class="text-xs text-slate-400 mb-6">سجل تفاصيل جهازك وسيقوم مهندس الصيانة بفحصه والرد عليك فوراً بالتكلفة وإمكانية الإصلاح.</p>
-                
                 <form id="clientForm" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1 font-medium">اسمك الكريم:</label>
-                            <input type="text" id="clientName" placeholder="اكتب اسمك للمتابعة به" class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1 font-medium">نوع وموديل الهاتف:</label>
-                            <input type="text" id="clientPhone" placeholder="مثال: Redmi A5 أو Poco X3" class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" required>
-                        </div>
+                        <input type="text" id="clientName" placeholder="اسمك الكريم" class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none" required>
+                        <input type="text" id="clientPhone" placeholder="نوع وموديل الهاتف" class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none" required>
                     </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1 font-medium">وصف مشكلة الجهاز (سوفتوير أو هاردوير):</label>
-                        <textarea id="clientNotes" placeholder="اشرح المشكلة (مثال: حساب جوجل بعد الفورمات FRP، معلق على الشعار، تغيير شاشة...)" class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-teal-400 transition" rows="3" required></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-black p-3.5 rounded-xl hover:opacity-90 transition transform hover:scale-[1.01] text-sm tracking-wide cursor-pointer shadow-lg shadow-teal-500/20">🚀 إرسال الطلب فوراً لـ طه فون</button>
+                    <textarea id="clientNotes" placeholder="اشرح المشكلة (حساب جوجل، معلق على الشعار، تغيير شاشة...)" class="w-full p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-white focus:outline-none" rows="3" required></textarea>
+                    <button type="submit" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-black p-3.5 rounded-xl text-sm cursor-pointer shadow-lg">🚀 إرسال الطلب فوراً لـ طه فون</button>
                 </form>
             </div>
 
-            <!-- متابعة الطلبات أونلاين للزبون -->
             <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl">
                 <h2 class="text-xl font-bold text-slate-200 mb-2">🕵️‍♂️ تتبع حالة جهازك والردود الذكية</h2>
-                <input type="text" id="clientSearchName" oninput="filterClientOrders()" placeholder="اكتب اسمك هنا لتصفية طلباتك ورؤية رد المحل..." class="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-teal-400 placeholder-slate-600 focus:outline-none focus:border-teal-500 mb-4">
+                <input type="text" id="clientSearchName" oninput="filterClientOrders()" placeholder="اكتب اسمك هنا لتصفية طلباتك ورؤية رد المحل..." class="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-teal-400 focus:outline-none mb-4">
                 <div id="clientOrdersList" class="space-y-4"></div>
             </div>
         </div>
 
-        <!-- ======================= 2. لوحة الإدارة الداخلية والمالية ======================= -->
+        <!-- ======================= 2. لوحة الإدارة المتقدمة والحسابات ======================= -->
         <div id="shopSection" class="hidden space-y-6">
-            <!-- كروت الحسابات النيون للشركاء -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-slate-900 p-4 rounded-xl border border-blue-500/30 text-center neon-card-blue">
-                    <span class="text-xs text-blue-400 font-bold block mb-1">أرباح السوفتوير (المقبوضة)</span>
-                    <span id="statTotalSoftware" class="text-3xl font-black text-blue-400 font-mono">0</span> <span class="text-xs text-blue-400">₪</span>
+            
+            <!-- لوحة جرد وحسبة نهاية الأسبوع الفخمة -->
+            <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-4">
+                <h3 class="text-sm font-black text-teal-400 tracking-wider border-b border-slate-800 pb-2 flex justify-between items-center">
+                    <span>📊 لوحة الجرد والتقسيم المالي الأسبوعي الحقيقي</span>
+                    <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded">آخر 7 أيام</span>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-blue-500/20 text-center">
+                        <span class="text-[10px] text-blue-400 block mb-1">صافي أرباح الأسبوع</span>
+                        <span id="statSoftwareWeek" class="text-xl font-black text-blue-400 font-mono">0</span> <span class="text-[10px] text-blue-400">₪</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-emerald-500/20 text-center">
+                        <span class="text-[10px] text-emerald-400 block mb-1">حصتك الكلية (50%)</span>
+                        <span id="statMyShareWeek" class="text-xl font-black text-emerald-400 font-mono">0</span> <span class="text-[10px] text-emerald-400">₪</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-purple-400/20 text-center">
+                        <span class="text-[10px] text-purple-400 block mb-1">قديش استلمت منها</span>
+                        <span id="statWithdrawn" class="text-xl font-black text-purple-400 font-mono">0</span> <span class="text-[10px] text-purple-400">₪</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-amber-500/20 text-center">
+                        <span class="text-[10px] text-amber-400 block mb-1">كم بقى لك صافي</span>
+                        <span id="statMyRemaining" class="text-xl font-black text-amber-500 font-mono">0</span> <span class="text-[10px] text-amber-400">₪</span>
+                    </div>
                 </div>
-                <div class="bg-slate-900 p-4 rounded-xl border border-emerald-500/30 text-center neon-card-green">
-                    <span class="text-xs text-emerald-400 font-bold block mb-1">حصتك مبرمج (50%)</span>
-                    <span id="statMyShare" class="text-3xl font-black text-emerald-400 font-mono">0</span> <span class="text-xs text-emerald-400">₪</span>
-                </div>
-                <div class="bg-slate-900 p-4 rounded-xl border border-amber-500/30 text-center">
-                    <span class="text-xs text-amber-400 font-bold block mb-1">حصة المحل (50%)</span>
-                    <span id="statShopShare" class="text-3xl font-black text-amber-400 font-mono">0</span> <span class="text-xs text-amber-400">₪</span>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-dashed border-slate-800 flex justify-between items-center">
+                        <span class="text-xs text-slate-400">⏳ حصتك المعلقة (أجهزة لم تقبض بعد):</span>
+                        <span class="text-sm font-bold text-rose-400 font-mono"><span id="statPendingNextWeek">0</span> ₪</span>
+                    </div>
+                    <!-- زر تسجيل سحب مبالغ من الحصة -->
+                    <div class="flex gap-2">
+                        <input type="number" id="withdrawAmount" placeholder="تسجيل استلام مبلغ شيكل" class="w-full p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white text-center focus:outline-none">
+                        <button onclick="registerWithdraw()" class="bg-purple-600 text-white px-4 rounded-xl text-xs font-bold whitespace-nowrap hover:bg-purple-500 cursor-pointer">تثبيت دفعة</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- تسجيل جهاز مباشر تم استلامه في طه فون -->
+            <!-- تسجيل جهاز مستلم مباشر داخل المحل -->
             <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-teal-400">📥 تسجيل جهاز مستلم داخل المحل</h3>
-                    <button onclick="logoutShop()" class="text-xs font-bold bg-rose-600/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-xl hover:bg-rose-600 hover:text-white transition cursor-pointer">🚪 تسجيل خروج</button>
+                    <h3 class="text-base font-bold text-teal-400">📥 تسجيل جهاز مستلم داخل المحل</h3>
+                    <button onclick="logoutShop()" class="text-xs font-bold bg-rose-600/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-xl hover:bg-rose-600 cursor-pointer">🚪 تسجيل خروج</button>
                 </div>
                 <form id="deviceForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input type="text" id="customerName" placeholder="اسم الزبون" class="p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none" required>
@@ -123,16 +153,16 @@
                         <input type="number" id="extraCost" placeholder="تكلفة سيرفر / بوكس خارجي" class="p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none">
                     </div>
                     <textarea id="notes" placeholder="ملاحظات الصيانة والعمليات البرمجية..." class="p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none md:col-span-2" rows="2"></textarea>
-                    <button type="submit" class="bg-teal-500 text-slate-950 font-bold p-3 rounded-xl md:col-span-2 hover:bg-teal-400 transition cursor-pointer">حفظ وتثبيت بالسجل</button>
+                    <button type="submit" class="w-full bg-teal-500 text-slate-950 font-bold p-3 rounded-xl md:col-span-2 hover:bg-teal-400 transition cursor-pointer">حفظ وتثبيت بالسجل</button>
                 </form>
             </div>
 
-            <!-- شريط البحث السريع والذكي -->
+            <!-- شريط البحث الفوري -->
             <input type="text" id="searchBox" oninput="searchDevices()" placeholder="🔍 ابحث الفوري باسم الزبون، العطل أو الهاتف..." class="w-full p-3 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-teal-400">
 
-            <!-- عرض الأجهزة والطلبات الواردة لـ طه فون -->
+            <!-- قائمة السجلات -->
             <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                <h3 class="text-lg font-bold text-slate-200 mb-4">📋 قائمة الأجهزة والطلبات الحالية بالمحل</h3>
+                <h3 class="text-base font-bold text-slate-200 mb-4">📋 قائمة الأجهزة والطلبات الحالية بالمحل</h3>
                 <div id="devicesList" class="space-y-4"></div>
             </div>
         </div>
@@ -142,61 +172,39 @@
     <script>
         let allDevices = [];
         let currentView = 'client';
-        let isLoggedIn = false; // متغير لتتبع حالة تسجيل الدخول
+        let isLoggedIn = false;
 
-        // دالة فحص الوصول للوحة التحكم
         function tryAccessShop() {
-            if (isLoggedIn) {
-                switchView('shop');
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-                document.getElementById('usernameInput').focus();
-            }
+            if (isLoggedIn) { switchView('shop'); } 
+            else { document.getElementById('loginModal').classList.remove('hidden'); document.getElementById('usernameInput').focus(); }
         }
 
-        // إغلاق نافذة تسجيل الدخول
         function closeLoginModal() {
             document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('usernameInput').value = '';
-            document.getElementById('passwordInput').value = '';
+            document.getElementById('usernameInput').value = ''; document.getElementById('passwordInput').value = '';
             document.getElementById('loginError').classList.add('hidden');
         }
 
-        // التحقق من صحة الحساب المكتوب
         function checkLogin() {
             const user = document.getElementById('usernameInput').value;
             const pass = document.getElementById('passwordInput').value;
-
             if (user === 'no7name' && pass === '102030nnn') {
-                isLoggedIn = true;
-                closeLoginModal();
-                switchView('shop');
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
-            }
+                isLoggedIn = true; closeLoginModal(); switchView('shop');
+            } else { document.getElementById('loginError').classList.remove('hidden'); }
         }
 
-        // تسجيل الخروج والقفل من جديد
-        function logoutShop() {
-            isLoggedIn = false;
-            switchView('client');
-        }
+        function logoutShop() { isLoggedIn = false; switchView('client'); }
 
         function switchView(view) {
             currentView = view;
             const btnClient = document.getElementById('btnClientView');
             const btnShop = document.getElementById('btnShopView');
-            
             if(view === 'shop') {
                 document.getElementById('shopSection').classList.remove('hidden');
                 document.getElementById('clientSection').classList.add('hidden');
-                btnShop.className = "w-full text-sm font-bold py-3 rounded-lg bg-teal-500 text-slate-950 shadow-lg transition";
-                btnClient.className = "w-full text-sm font-medium py-3 rounded-lg text-slate-400 hover:text-white transition";
             } else {
                 document.getElementById('shopSection').classList.add('hidden');
                 document.getElementById('clientSection').classList.remove('hidden');
-                btnClient.className = "w-full text-sm font-bold py-3 rounded-lg bg-teal-500 text-slate-950 shadow-lg transition";
-                btnShop.className = "w-full text-sm font-medium py-3 rounded-lg text-slate-400 hover:text-white transition";
             }
             loadDevices();
         }
@@ -207,69 +215,106 @@
                 const data = await res.json();
                 allDevices = data.devices;
 
-                document.getElementById('statTotalSoftware').innerText = data.stats.totalSoftware;
-                document.getElementById('statMyShare').innerText = data.stats.myShare;
-                document.getElementById('statShopShare').innerText = data.stats.shopShare;
+                document.getElementById('statSoftwareWeek').innerText = data.stats.totalSoftwareWeek;
+                document.getElementById('statMyShareWeek').innerText = data.stats.myShareWeek;
+                document.getElementById('statWithdrawn').innerText = data.stats.technicianWithdrawn;
+                document.getElementById('statMyRemaining').innerText = data.stats.myRemaining;
+                document.getElementById('statPendingNextWeek').innerText = data.stats.pendingNextWeek;
 
-                if(currentView === 'shop') {
-                    renderShopDevices(allDevices);
-                } else {
-                    filterClientOrders();
-                }
-            } catch (err) {
-                console.error("خطأ في الاتصال بالسيرفر");
-            }
+                if(currentView === 'shop') { renderShopDevices(allDevices); } 
+                else { filterClientOrders(); }
+            } catch (err) { console.error("خطأ في قراءة البيانات"); }
+        }
+
+        async function registerWithdraw() {
+            const amt = document.getElementById('withdrawAmount').value;
+            if(!amt || amt <= 0) return;
+            await fetch('/api/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: amt })
+            });
+            document.getElementById('withdrawAmount').value = '';
+            loadDevices();
+            alert("💰 تم تسجيل سحب المبلغ وتحديث حسبتك المتبقية بنجاح!");
+        }
+
+        // فتح مودال التعديل الشامل لأي حقل منسي
+        function openEditModal(id, name, model, type, cost, extra, notes) {
+            document.getElementById('editDevId').value = id;
+            document.getElementById('editCustomerName').value = name;
+            document.getElementById('editPhoneModel').value = model;
+            document.getElementById('editIssueType').value = type;
+            document.getElementById('editCost').value = cost;
+            document.getElementById('editExtraCost').value = extra;
+            document.getElementById('editNotes').value = notes;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+        async function saveDeviceEdit() {
+            const id = document.getElementById('editDevId').value;
+            const payload = {
+                customer_name: document.getElementById('editCustomerName').value,
+                phone_model: document.getElementById('editPhoneModel').value,
+                issue_type: document.getElementById('editIssueType').value,
+                cost: document.getElementById('editCost').value,
+                extra_cost: document.getElementById('editExtraCost').value,
+                notes: document.getElementById('editNotes').value
+            };
+
+            await fetch(`/api/devices/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            closeEditModal();
+            loadDevices();
         }
 
         function renderShopDevices(devices) {
             const list = document.getElementById('devicesList');
             list.innerHTML = '';
 
-            if(!devices || devices.length === 0) {
-                list.innerHTML = '<p class="text-slate-500 text-center py-4 text-xs">لا توجد سجلات حالية.</p>';
-                return;
-            }
-
             devices.forEach(dev => {
                 if(dev.status === 'طلب معلق') {
                     list.innerHTML += `
                         <div class="border border-dashed border-teal-400/40 p-4 rounded-xl bg-teal-950/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div class="space-y-1 w-full md:w-2/3">
-                                <span class="inline-block text-[10px] font-bold bg-teal-400 text-slate-950 px-2 py-0.5 rounded-full">🌐 طلب فحص أونلاين وارد</span>
-                                <h4 class="font-bold text-lg text-white">${dev.phone_model}</h4>
-                                <p class="text-xs text-slate-300">الزبون: ${dev.customer_name}</p>
-                                <p class="text-xs text-amber-400 bg-slate-950 p-2.5 rounded border border-slate-800">العطل الموصوف: ${dev.notes}</p>
+                                <span class="text-[9px] font-bold bg-teal-400 text-slate-950 px-2 py-0.5 rounded-full">🌐 طلب أونلاين</span>
+                                <h4 class="font-bold text-sm text-white">${dev.phone_model} - <span class="text-xs text-slate-400">${dev.customer_name}</span></h4>
+                                <p class="text-xs text-amber-400 bg-slate-950 p-2 rounded border border-slate-800">وصف العطل: ${dev.notes}</p>
                             </div>
-                            <div class="flex flex-col gap-2 w-full md:w-auto">
-                                <div class="flex gap-1">
-                                    <input type="number" id="price_${dev.id}" placeholder="السعر ₪" class="p-2 bg-slate-800 text-center text-xs text-white rounded-lg border border-slate-700 focus:outline-none w-24">
-                                    <button onclick="respondOrder('${dev.id}', true)" class="bg-teal-500 text-slate-950 font-bold text-xs px-3 py-2 rounded-lg hover:bg-teal-400 cursor-pointer">موافق، نقدر</button>
-                                </div>
-                                <button onclick="respondOrder('${dev.id}', false)" class="text-xs font-semibold bg-rose-600/20 text-rose-400 border border-rose-500/20 py-2 rounded-lg hover:bg-rose-600 hover:text-white cursor-pointer">نعتذر، لا يمكن حالياً</button>
+                            <div class="flex gap-2 w-full md:w-auto">
+                                <input type="number" id="price_${dev.id}" placeholder="السعر ₪" class="p-2 bg-slate-800 text-center text-xs text-white rounded-lg border border-slate-700 w-24">
+                                <button onclick="respondOrder('${dev.id}', true)" class="bg-teal-500 text-slate-950 font-bold text-xs px-3 rounded-lg cursor-pointer">تسعير وقبول</button>
+                                <button onclick="respondOrder('${dev.id}', false)" class="text-xs bg-rose-600/20 text-rose-400 px-2 rounded-lg cursor-pointer">اعتذار</button>
                             </div>
                         </div>
                     `;
                 } else {
-                    const statusClass = dev.status === 'تم التسليم' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
-                                        dev.status === 'جاهز' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-                                        'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-                    const paidClass = dev.is_paid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+                    const statusClass = dev.status === 'تم التسليم' ? 'bg-blue-500/10 text-blue-400' : dev.status === 'جاهز' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400';
+                    const paidClass = dev.is_paid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 text-rose-400';
                     
                     list.innerHTML += `
                         <div class="border border-slate-800 p-4 rounded-xl bg-slate-900/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div>
-                                <h4 class="font-bold text-base text-white">${dev.phone_model} <span class="text-[10px] ${dev.issue_type === 'سوفتوير' ? 'text-blue-400' : 'text-purple-400'} px-2 py-0.5 rounded bg-slate-950 mr-2 border border-slate-800">${dev.issue_type}</span></h4>
-                                <p class="text-xs text-slate-300 mt-1">العميل: ${dev.customer_name} | السعر: <span class="text-teal-400 font-bold">${dev.cost} ₪</span> ${dev.extra_cost > 0 ? `<span class="text-rose-400 text-[10px]">(سيرفر: ${dev.extra_cost})</span>` : ''}</p>
-                                <p class="text-xs text-slate-400 bg-slate-950/40 p-2 rounded mt-1">الوصف: ${dev.notes || 'لا يوجد'}</p>
+                            <div class="space-y-1">
+                                <div class="text-[10px] text-slate-500 font-mono">${dev.date_string || 'مستلم سابقاً'}</div>
+                                <h4 class="font-bold text-base text-white">${dev.phone_model} <span class="text-[10px] text-blue-400 px-1.5 py-0.5 rounded bg-slate-950 mr-2 border border-slate-800">${dev.issue_type}</span></h4>
+                                <p class="text-xs text-slate-300">الزبون: ${dev.customer_name} | الحساب: <span class="text-teal-400 font-bold">${dev.cost} ₪</span> ${dev.extra_cost > 0 ? `<span class="text-rose-400 text-[10px]">(سيرفر: ${dev.extra_cost})</span>` : ''}</p>
+                                <p class="text-xs text-slate-400 bg-slate-950/40 p-2 rounded">الملاحظات: ${dev.notes || 'لا يوجد'}</p>
                             </div>
                             <div class="flex flex-wrap gap-2 items-center justify-end w-full md:w-auto">
-                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${statusClass}">${dev.status}</span>
-                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${paidClass}">${dev.is_paid ? '💰 مقبوض' : '❌ لم يقبض'}</span>
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold ${statusClass}">${dev.status}</span>
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold ${paidClass}">${dev.is_paid ? '💰 مقبوض' : '❌ لم يقبض'}</span>
                                 <div class="flex gap-1 w-full md:w-auto justify-end mt-1">
-                                    ${dev.status === 'قيد الانتظار' ? `<button onclick="updateDevice('${dev.id}', {status: 'جاهز'})" class="text-[11px] bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-500 cursor-pointer">جاهز</button>` : ''}
-                                    ${dev.status === 'جاهز' ? `<button onclick="updateDevice('${dev.id}', {status: 'تم التسليم'})" class="text-[11px] bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-500 cursor-pointer">تسليم</button>` : ''}
-                                    ${!dev.is_paid ? `<button onclick="updateDevice('${dev.id}', {is_paid: true})" class="text-[11px] bg-teal-400 text-slate-950 font-bold px-2 py-1 rounded hover:bg-teal-300 cursor-pointer">قبض</button>` : ''}
-                                    <button onclick="deleteDevice('${dev.id}')" class="text-[11px] bg-rose-600/20 text-rose-400 px-2 py-1 rounded hover:bg-rose-600 hover:text-white cursor-pointer">حذف</button>
+                                    <!-- زر التعديل الشامل والمنسي في أي وقت -->
+                                    <button onclick="openEditModal('${dev.id}', '${dev.customer_name}', '${dev.phone_model}', '${dev.issue_type}', '${dev.cost}', '${dev.extra_cost}', '${dev.notes}')" class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1 rounded hover:bg-slate-700 cursor-pointer">🛠️ تعديل التفاصيل</button>
+                                    ${dev.status === 'قيد الانتظار' ? `<button onclick="updateDevice('${dev.id}', {status: 'جاهز'})" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded cursor-pointer">جاهز</button>` : ''}
+                                    ${dev.status === 'جاهز' ? `<button onclick="updateDevice('${dev.id}', {status: 'تم التسليم'})" class="text-[10px] bg-blue-600 text-white px-2 py-1 rounded cursor-pointer">تسليم</button>` : ''}
+                                    ${!dev.is_paid ? `<button onclick="updateDevice('${dev.id}', {is_paid: true})" class="text-[10px] bg-teal-400 text-slate-950 font-bold px-2 py-1 rounded cursor-pointer">قبض</button>` : ''}
+                                    <button onclick="deleteDevice('${dev.id}')" class="text-[10px] bg-rose-600/20 text-rose-400 px-2 py-1 rounded cursor-pointer">حذف</button>
                                 </div>
                             </div>
                         </div>
@@ -280,37 +325,23 @@
 
         function filterClientOrders() {
             const searchName = document.getElementById('clientSearchName').value.toLowerCase();
-            const list = document.getElementById('clientOrdersList');
-            list.innerHTML = '';
-
+            const list = document.getElementById('clientOrdersList'); list.innerHTML = '';
             const orders = allDevices.filter(dev => dev.status === 'طلب معلق' || dev.reply_message !== '');
             const filtered = orders.filter(dev => dev.customer_name.toLowerCase().includes(searchName));
 
             if(filtered.length === 0) {
-                list.innerHTML = '<p class="text-slate-600 text-center text-xs py-4">اكتب اسمك لمتابعة حالة جهازك والردود الفورية عليه.</p>';
-                return;
+                list.innerHTML = '<p class="text-slate-600 text-center text-xs py-4">اكتب اسمك لمتابعة حالة جهازك والردود الفورية عليه.</p>'; return;
             }
-
             filtered.forEach(dev => {
                 let text = '⏳ جاري فحص العطل والبوكسات المدعومة من قبل المبرمج بالمحل...';
                 let style = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-                
-                if(dev.reply_message.includes('نعتذر')) {
-                    text = `❌ اعتذار: ${dev.reply_message}`;
-                    style = 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
-                } else if(dev.reply_message !== '') {
-                    text = `✅ تم الفحص بنجاح: ${dev.reply_message} | السعر المتوقع: [ ${dev.cost} شيكل ] تفضل بزيارة المحل لتسليم الجهاز وبدء الصيانة فوراً!`;
-                    style = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-                }
-
+                if(dev.reply_message.includes('نعتذر')) { text = `❌ اعتذار: ${dev.reply_message}`; style = 'bg-rose-500/10 text-rose-400'; } 
+                else if(dev.reply_message !== '') { text = `✅ تم الفحص بنجاح: ${dev.reply_message} | السعر المتوقع: [ ${dev.cost} شيكل ] تفضل للمحل لبدء العمل!`; style = 'bg-emerald-500/10 text-emerald-400'; }
                 list.innerHTML += `
                     <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-md">
-                        <div class="flex justify-between items-center mb-2">
-                            <h4 class="font-bold text-white text-base">${dev.phone_model}</h4>
-                            <span class="text-[10px] text-slate-500">طه فون أونلاين</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mb-2">الاسم المسجل: ${dev.customer_name}</p>
-                        <div class="p-3 rounded-lg text-xs font-medium leading-relaxed ${style}">${text}</div>
+                        <h4 class="font-bold text-white text-sm mb-1">${dev.phone_model} <span class="text-[10px] text-slate-500">طه فون أونلاين</span></h4>
+                        <p class="text-xs text-slate-400 mb-2">الاسم: ${dev.customer_name}</p>
+                        <div class="p-2.5 rounded-lg text-xs ${style}">${text}</div>
                     </div>
                 `;
             });
@@ -319,82 +350,30 @@
         async function respondOrder(id, accept) {
             let payload = {};
             if(accept) {
-                const p = document.getElementById(`price_${id}`).value;
-                if(!p) { alert("الرجاء تحديد سعر الإصلاح المتوقع للزبون!"); return; }
+                const p = document.getElementById(`price_${id}`).value; if(!p) { alert("الرجاء تحديد السعر!"); return; }
                 payload = { status: 'قيد الانتظار', cost: p, reply_message: 'موافق، العطل مدعوم وجاهزون للعمل عليه بأحدث بوكسات السوفتوير!' };
-            } else {
-                payload = { status: 'مرفوض', reply_message: 'نعتذر منك بشدة، هذا العطل غير مدعوم على السيرفرات أو البوكسات المتوفرة بالمحل حالياً.' };
-            }
-            await fetch(`/api/devices/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            } else { payload = { status: 'مرفوض', reply_message: 'نعتذر منك بشدة، هذا العطل غير مدعوم على السيرفرات حالياً.' }; }
+            await fetch(`/api/devices/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             loadDevices();
         }
 
-        // إرسال النماذج والتحكم
         document.getElementById('clientForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('clientName').value;
-            await fetch('/api/devices', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customer_name: name,
-                    phone_model: document.getElementById('clientPhone').value,
-                    notes: document.getElementById('clientNotes').value,
-                    is_client_order: true
-                })
-            });
-            document.getElementById('clientSearchName').value = name;
-            document.getElementById('clientForm').reset();
-            loadDevices();
-            alert("🚀 تم إرسال طلبك لمهندس طه فون بنجاح! سيتم الفحص والرد خلال دقائق بالأسفل.");
+            e.preventDefault(); const name = document.getElementById('clientName').value;
+            await fetch('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_name: name, phone_model: document.getElementById('clientPhone').value, notes: document.getElementById('clientNotes').value, is_client_order: true }) });
+            document.getElementById('clientSearchName').value = name; document.getElementById('clientForm').reset(); loadDevices();
+            alert("🚀 تم إرسال الطلب لمهندس طه فون بنجاح!");
         });
 
         document.getElementById('deviceForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await fetch('/api/devices', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customer_name: document.getElementById('customerName').value,
-                    phone_model: document.getElementById('phoneModel').value,
-                    issue_type: document.getElementById('issueType').value,
-                    cost: document.getElementById('cost').value,
-                    extra_cost: document.getElementById('extraCost').value || 0,
-                    notes: document.getElementById('notes').value
-                })
-            });
-            document.getElementById('deviceForm').reset();
-            loadDevices();
+            await fetch('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_name: document.getElementById('customerName').value, phone_model: document.getElementById('phoneModel').value, issue_type: document.getElementById('issueType').value, cost: document.getElementById('cost').value, extra_cost: document.getElementById('extraCost').value || 0, notes: document.getElementById('notes').value }) });
+            document.getElementById('deviceForm').reset(); loadDevices();
         });
 
-        async function updateDevice(id, fields) {
-            await fetch(`/api/devices/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
-            loadDevices();
-        }
-
-        async function deleteDevice(id) {
-            if(confirm("هل تريد حذف هذا الجهاز نهائياً من سجل طه فون؟")) {
-                await fetch(`/api/devices/${id}`, { method: 'DELETE' });
-                loadDevices();
-            }
-        }
-
-        function searchDevices() {
-            const q = document.getElementById('searchBox').value.toLowerCase();
-            const f = allDevices.filter(d => d.customer_name.toLowerCase().includes(q) || d.phone_model.toLowerCase().includes(q) || d.notes.toLowerCase().includes(q));
-            renderShopDevices(f);
-        }
-
-        // تفعيل النقر بزر Enter لتسجيل الدخول الفوري
-        document.getElementById('passwordInput').addEventListener('keyup', function(event) {
-            if (event.key === 'Enter') {
-                checkLogin();
-            }
-        });
+        async function updateDevice(id, fields) { await fetch(`/api/devices/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }); loadDevices(); }
+        async function deleteDevice(id) { if(confirm("هل تريد الحذف؟")) { await fetch(`/api/devices/${id}`, { method: 'DELETE' }); loadDevices(); } }
+        function searchDevices() { const q = document.getElementById('searchBox').value.toLowerCase(); const f = allDevices.filter(d => d.customer_name.toLowerCase().includes(q) || d.phone_model.toLowerCase().includes(q) || d.notes.toLowerCase().includes(q)); renderShopDevices(f); }
+        document.getElementById('passwordInput').addEventListener('keyup', (e) => { if(e.key === 'Enter') checkLogin(); });
 
         loadDevices();
     </script>
