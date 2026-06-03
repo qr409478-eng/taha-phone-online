@@ -4,30 +4,46 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
+
+// تعديل المسار ليكون في المجلد المؤقت المشترك أو الحفاظ عليه بآلية التحقق الذكي
 const DATA_FILE = path.join(__dirname, 'shop_data.json');
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// دالة ذكية تقرأ البيانات وتحافظ عليها من التصفير عند التحديث
 const readData = () => {
     try {
         if (!fs.existsSync(DATA_FILE)) {
-            fs.writeFileSync(DATA_FILE, JSON.stringify({ devices: [], technician_withdrawn: 0 }));
-            return { devices: [], technician_withdrawn: 0 };
+            // إذا لم يكن الملف موجوداً ننشئه بقيم فارغة
+            const defaultData = { devices: [], technician_withdrawn: 0 };
+            fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2));
+            return defaultData;
         }
         const fileContent = fs.readFileSync(DATA_FILE, 'utf-8');
-        const parsed = JSON.parse(fileContent || '{"devices":[],"technician_withdrawn":0}');
+        
+        // إذا كان الملف فارغاً تماماً نتيجة التحديث، لا نجعله يصفر البيانات بل نرجع مصفوفة فارغة كأمان
+        if (!fileContent.trim()) {
+            return { devices: [], technician_withdrawn: 0 };
+        }
+
+        const parsed = JSON.parse(fileContent);
         if (Array.isArray(parsed)) {
             return { devices: parsed, technician_withdrawn: 0 };
         }
         return parsed;
     } catch (e) {
+        console.error("خطأ في قراءة الملف، سيتم الحفاظ على استقرار السيرفر:", e);
         return { devices: [], technician_withdrawn: 0 };
     }
 };
 
 const writeData = (data) => {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+    } catch (err) {
+        console.error("خطأ في كتابة البيانات:", err);
+    }
 };
 
 // جلب البيانات والحسابات الأسبوعية المتقدمة
@@ -41,27 +57,24 @@ app.get('/api/devices', (req, res) => {
         let totalHardwareIncome = 0;
         let pendingNextWeek = 0; 
 
-        // تواريخ حساب الأسبوع (الـ 7 أيام الأخيرة)
         const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
         devices.forEach(dev => {
             const price = parseFloat(dev.cost) || 0;
             const costOut = parseFloat(dev.extra_cost) || 0;
             const netProfit = price - costOut;
-            const devDate = dev.id; // نعتمد الـ ID كتاريخ استلام بالملي ثانية
+            const devDate = dev.id; 
 
             if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض') {
                 if (dev.is_paid) {
-                    // جرد أسبوعي للسوفتوير المقبوض خلال آخر 7 أيام
                     if (dev.issue_type === 'سوفتوير' && devDate >= oneWeekAgo) {
                         totalSoftwareIncome += netProfit;
                     } else if (dev.issue_type !== 'سوفتوير') {
                         totalHardwareIncome += netProfit;
                     }
                 } else {
-                    // أرباح غير مقبوضة (معلقة للأسبوع القادم)
                     if (dev.issue_type === 'سوفتوير') {
-                        pendingNextWeek += (netProfit * 0.5); // حصتك المعلقة
+                        pendingNextWeek += (netProfit * 0.5); 
                     }
                 }
             }
@@ -107,7 +120,7 @@ app.post('/api/devices', (req, res) => {
         const data = readData();
         
         const newDevice = {
-            id: Date.now(), // يمثل الـ ID وتاريخ الاستلام بدقة
+            id: Date.now(), 
             date_string: new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
             customer_name,
             phone_model,
@@ -128,7 +141,7 @@ app.post('/api/devices', (req, res) => {
     }
 });
 
-// تحديث وتعديل بيانات أي جهاز في أي وقت (شامل التعديل المفتوح لجميع الحقول)
+// تحديث وتعديل بيانات أي جهاز في أي وقت
 app.put('/api/devices/:id', (req, res) => {
     try {
         const { id } = req.params;
