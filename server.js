@@ -1,57 +1,39 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
-// تعديل المسار ليكون في المجلد المؤقت المشترك أو الحفاظ عليه بآلية التحقق الذكي
-const DATA_FILE = path.join(__dirname, 'shop_data.json');
+// تم ربط الحساب بالسيرفر السحابي الخاص بك بنجاح 🚀
+const SUPABASE_URL = 'https://buxnqmmbecgtnckygudx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1eG5xbW1iZWNndG5ja3lndWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTA3MjUsImV4cCI6MjA5NjA2NjcyNX0.jqlt5oguM2O9Bh-6rdb61XrqkoOKss8qxUGu-ZixcL0';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// دالة ذكية تقرأ البيانات وتحافظ عليها من التصفير عند التحديث
-const readData = () => {
-    try {
-        if (!fs.existsSync(DATA_FILE)) {
-            // إذا لم يكن الملف موجوداً ننشئه بقيم فارغة
-            const defaultData = { devices: [], technician_withdrawn: 0 };
-            fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2));
-            return defaultData;
+// دالة مساعدة للاتصال بـ Supabase
+async function supabaseRequest(endpoint, method = 'GET', body = null) {
+    const options = {
+        method,
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
         }
-        const fileContent = fs.readFileSync(DATA_FILE, 'utf-8');
-        
-        // إذا كان الملف فارغاً تماماً نتيجة التحديث، لا نجعله يصفر البيانات بل نرجع مصفوفة فارغة كأمان
-        if (!fileContent.trim()) {
-            return { devices: [], technician_withdrawn: 0 };
-        }
+    };
+    if (body) options.body = JSON.stringify(body);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
+    return await res.json();
+}
 
-        const parsed = JSON.parse(fileContent);
-        if (Array.isArray(parsed)) {
-            return { devices: parsed, technician_withdrawn: 0 };
-        }
-        return parsed;
-    } catch (e) {
-        console.error("خطأ في قراءة الملف، سيتم الحفاظ على استقرار السيرفر:", e);
-        return { devices: [], technician_withdrawn: 0 };
-    }
-};
-
-const writeData = (data) => {
+// جلب البيانات والحسابات الأسبوعية من السحاب
+app.get('/api/devices', async (req, res) => {
     try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    } catch (err) {
-        console.error("خطأ في كتابة البيانات:", err);
-    }
-};
-
-// جلب البيانات والحسابات الأسبوعية المتقدمة
-app.get('/api/devices', (req, res) => {
-    try {
-        const data = readData();
-        const devices = data.devices || [];
-        const withdrawn = data.technician_withdrawn || 0;
+        const devices = await supabaseRequest('devices?select=*') || [];
+        const config = await supabaseRequest('shop_config?id=eq.1&select=*') || [];
+        const withdrawn = config[0]?.technician_withdrawn || 0;
 
         let totalSoftwareIncome = 0;
         let totalHardwareIncome = 0;
@@ -59,32 +41,35 @@ app.get('/api/devices', (req, res) => {
 
         const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-        devices.forEach(dev => {
-            const price = parseFloat(dev.cost) || 0;
-            const costOut = parseFloat(dev.extra_cost) || 0;
-            const netProfit = price - costOut;
-            const devDate = dev.id; 
+        if (Array.isArray(devices)) {
+            devices.forEach(dev => {
+                const price = parseFloat(dev.cost) || 0;
+                const costOut = parseFloat(dev.extra_cost) || 0;
+                const netProfit = price - costOut;
+                const devDate = parseInt(dev.id); 
 
-            if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض') {
-                if (dev.is_paid) {
-                    if (dev.issue_type === 'سوفتوير' && devDate >= oneWeekAgo) {
-                        totalSoftwareIncome += netProfit;
-                    } else if (dev.issue_type !== 'سوفتوير') {
-                        totalHardwareIncome += netProfit;
-                    }
-                } else {
-                    if (dev.issue_type === 'سوفتوير') {
-                        pendingNextWeek += (netProfit * 0.5); 
+                if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض') {
+                    if (dev.is_paid) {
+                        if (dev.issue_type === 'سوفتوير' && devDate >= oneWeekAgo) {
+                            totalSoftwareIncome += netProfit;
+                        } else if (dev.issue_type !== 'سوفتوير') {
+                            totalHardwareIncome += netProfit;
+                        }
+                    } else {
+                        if (dev.issue_type === 'سوفتوير') {
+                            pendingNextWeek += (netProfit * 0.5); 
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         const myShareTotal = totalSoftwareIncome * 0.5;
         const myRemaining = myShareTotal - withdrawn;
+        const sortedDevices = Array.isArray(devices) ? [...devices].sort((a, b) => b.id - a.id) : [];
 
         res.json({
-            devices: [...devices].reverse(), 
+            devices: sortedDevices, 
             stats: {
                 totalSoftwareWeek: totalSoftwareIncome,
                 myShareWeek: myShareTotal,
@@ -96,28 +81,29 @@ app.get('/api/devices', (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: "خطأ في قراءة البيانات" });
+        res.status(500).json({ error: "خطأ في الاتصال بقاعدة البيانات السحابية" });
     }
 });
 
-// سحب مبالغ من الحصة
-app.post('/api/withdraw', (req, res) => {
+// تسجيل دفعة مسحوبة في السحاب
+app.post('/api/withdraw', async (req, res) => {
     try {
         const { amount } = req.body;
-        const data = readData();
-        data.technician_withdrawn = (data.technician_withdrawn || 0) + (parseFloat(amount) || 0);
-        writeData(data);
-        res.json({ message: "تم تسجيل استلام المبلغ بنجاح", technician_withdrawn: data.technician_withdrawn });
+        const config = await supabaseRequest('shop_config?id=eq.1&select=*') || [];
+        const currentWithdrawn = config[0]?.technician_withdrawn || 0;
+        const newTotal = currentWithdrawn + (parseFloat(amount) || 0);
+
+        await supabaseRequest('shop_config?id=eq.1', 'PATCH', { technician_withdrawn: newTotal });
+        res.json({ message: "تم تحديث السحاب بنجاح" });
     } catch (err) {
         res.status(500).json({ error: "خطأ في تحديث المسحوبات" });
     }
 });
 
-// تسجيل جهاز جديد مع تاريخ تلقائي
-app.post('/api/devices', (req, res) => {
+// تسجيل جهاز جديد في السحاب
+app.post('/api/devices', async (req, res) => {
     try {
         const { customer_name, phone_model, issue_type, notes, cost, extra_cost, is_client_order } = req.body;
-        const data = readData();
         
         const newDevice = {
             id: Date.now(), 
@@ -133,59 +119,37 @@ app.post('/api/devices', (req, res) => {
             reply_message: ''
         };
         
-        data.devices.push(newDevice);
-        writeData(data);
-        res.json({ message: "تم التسجيل بنجاح", id: newDevice.id });
+        await supabaseRequest('devices', 'POST', newDevice);
+        res.json({ message: "تم الحفظ أونلاين بنجاح", id: newDevice.id });
     } catch (err) {
-        res.status(500).json({ error: "خطأ في حفظ البيانات" });
+        res.status(500).json({ error: "خطأ في الحفظ السحابي" });
     }
 });
 
-// تحديث وتعديل بيانات أي جهاز في أي وقت
-app.put('/api/devices/:id', (req, res) => {
+// تعديل حقول أي جهاز في السحاب
+app.put('/api/devices/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, is_paid, cost, extra_cost, customer_name, phone_model, notes, reply_message, issue_type } = req.body;
-        const data = readData();
+        const updateFields = req.body;
         
-        let found = false;
-        data.devices = data.devices.map(dev => {
-            if (dev.id == id) {
-                if (status !== undefined) dev.status = status;
-                if (is_paid !== undefined) dev.is_paid = is_paid;
-                if (cost !== undefined) dev.cost = parseFloat(cost);
-                if (extra_cost !== undefined) dev.extra_cost = parseFloat(extra_cost);
-                if (customer_name !== undefined) dev.customer_name = customer_name;
-                if (phone_model !== undefined) dev.phone_model = phone_model;
-                if (notes !== undefined) dev.notes = notes;
-                if (issue_type !== undefined) dev.issue_type = issue_type;
-                if (reply_message !== undefined) dev.reply_message = reply_message;
-                found = true;
-            }
-            return dev;
-        });
-        
-        if (!found) return res.status(404).json({ error: "الجهاز غير موجود" });
-        
-        writeData(data);
-        res.json({ message: "تم التحديث بنجاح" });
+        await supabaseRequest(`devices?id=eq.${id}`, 'PATCH', updateFields);
+        res.json({ message: "تم التعديل على السحاب بنجاح" });
     } catch (err) {
         res.status(500).json({ error: "خطأ في تحديث البيانات" });
     }
 });
 
-app.delete('/api/devices/:id', (req, res) => {
+// حذف جهاز نهائياً من السحاب
+app.delete('/api/devices/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const data = readData();
-        data.devices = data.devices.filter(dev => dev.id != id);
-        writeData(data);
-        res.json({ message: "تم حذف الجهاز بنجاح" });
+        await supabaseRequest(`devices?id=eq.${id}`, 'DELETE');
+        res.json({ message: "تم الحذف من السحاب بنجاح" });
     } catch (err) {
         res.status(500).json({ error: "خطأ في الحذف" });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 سيرفر طه فون يعمل على المنفذ ${PORT}`);
+    console.log(`🚀 سيرفر طه فون السحابي يعمل بنجاح على المنفذ ${PORT}`);
 });
