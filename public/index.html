@@ -31,11 +31,14 @@
         </div>
 
         <div id="shopSection" class="hidden space-y-6">
-            <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto text-xs sm:text-sm">
-                <button id="t1" onclick="switchManagerTab('devices')" class="text-teal-400 border-b-2 border-teal-500 font-bold pb-2 px-3">🛠️ الأجهزة والمالية</button>
-                <button id="t4" onclick="switchManagerTab('incoming')" class="text-slate-400 font-bold pb-2 px-3 relative">📥 طلبات الزبائن <span id="incomingBadge" class="bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full hidden">0</span></button>
-                <button id="t2" onclick="switchManagerTab('debts')" class="text-slate-400 font-bold pb-2 px-3">💰 دفتر الديون (لنا / علينا)</button>
-                <button id="t3" onclick="switchManagerTab('icloud')" class="text-slate-400 font-bold pb-2 px-3">☁️ سيرفر iCloud</button>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2 overflow-x-auto">
+                <div class="flex gap-2 text-xs sm:text-sm">
+                    <button id="t1" onclick="switchManagerTab('devices')" class="text-teal-400 border-b-2 border-teal-500 font-bold pb-2 px-3">🛠️ الأجهزة والمالية</button>
+                    <button id="t4" onclick="switchManagerTab('incoming')" class="text-slate-400 font-bold pb-2 px-3 relative">📥 طلبات الزبائن <span id="incomingBadge" class="bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full hidden">0</span></button>
+                    <button id="t2" onclick="switchManagerTab('debts')" class="text-slate-400 font-bold pb-2 px-3">💰 دفتر الديون (لنا / علينا)</button>
+                    <button id="t3" onclick="switchManagerTab('icloud')" class="text-slate-400 font-bold pb-2 px-3">☁️ سيرفر iCloud</button>
+                </div>
+                <button onclick="logoutTechnical()" class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-slate-950 text-xs px-3 py-1 rounded-lg font-bold transition-all">🔒 قفل اللوحة</button>
             </div>
 
             <div id="secDevices" class="space-y-6">
@@ -150,10 +153,72 @@
     <script>
         let allDevices = []; let allDebts = []; let supplierDebts = []; let icloudServices = [];
 
-        function showLoginSection() { document.getElementById('loginSection').classList.toggle('hidden'); document.getElementById('clientSection').classList.add('hidden'); }
-        function showClientView() { document.getElementById('clientSection').classList.remove('hidden'); document.getElementById('loginSection').classList.add('hidden'); document.getElementById('shopSection').classList.add('hidden'); fetchClientData(); }
-        function checkLogin() { if(document.getElementById('passwordInput').value === '720') { localStorage.setItem('taha_auth', 'true'); loadManagerDashboard(); } }
-        function loadManagerDashboard() { document.getElementById('loginSection').classList.add('hidden'); document.getElementById('authChoice').classList.add('hidden'); document.getElementById('shopSection').classList.remove('hidden'); loadDevicesData(); loadDebtsData(); loadSupplierDebtsData(); loadIcloudData(); }
+        // --- نظام الحماية وقفل الجلسة الذكي (كل مرة فوت أو كل نصف ساعة عدم نشاط) ---
+        const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 دقيقة بالملي ثانية
+
+        function resetSessionTimer() {
+            if (localStorage.getItem('taha_auth') === 'true') {
+                localStorage.setItem('last_action_time', Date.now().toString());
+            }
+        }
+
+        // الاستماع لحركات المستخدم لتحديث وقت النشاط تلقائياً
+        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, resetSessionTimer);
+        });
+
+        function checkSessionValidity() {
+            const auth = localStorage.getItem('taha_auth');
+            const lastAction = localStorage.getItem('last_action_time');
+            
+            if (auth === 'true') {
+                if (!lastAction || (Date.now() - parseInt(lastAction) > TIMEOUT_DURATION)) {
+                    // انتهت الـ 30 دقيقة أو تم عمل تحديث كامل بدون جلسة مستمرة
+                    logoutTechnical();
+                } else {
+                    // الجلسة نشطة، أظهر اللوحة فوراً
+                    loadManagerDashboard();
+                }
+            }
+        }
+
+        function showLoginSection() { 
+            document.getElementById('loginSection').classList.toggle('hidden'); 
+            document.getElementById('clientSection').classList.add('hidden'); 
+        }
+        
+        function showClientView() { 
+            document.getElementById('clientSection').classList.remove('hidden'); 
+            document.getElementById('loginSection').classList.add('hidden'); 
+            document.getElementById('shopSection').classList.add('hidden'); 
+            fetchClientData(); 
+        }
+        
+        function checkLogin() { 
+            if(document.getElementById('passwordInput').value === '720') { 
+                localStorage.setItem('taha_auth', 'true'); 
+                resetSessionTimer();
+                loadManagerDashboard(); 
+            } else {
+                alert('رمز المرور خاطئ يا هندسة!');
+            }
+        }
+
+        function logoutTechnical() {
+            localStorage.removeItem('taha_auth');
+            localStorage.removeItem('last_action_time');
+            document.getElementById('shopSection').classList.add('hidden');
+            document.getElementById('authChoice').classList.remove('hidden');
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('passwordInput').value = '';
+        }
+
+        function loadManagerDashboard() { 
+            document.getElementById('loginSection').classList.add('hidden'); 
+            document.getElementById('authChoice').classList.add('hidden'); 
+            document.getElementById('shopSection').classList.remove('hidden'); 
+            loadDevicesData(); loadDebtsData(); loadSupplierDebtsData(); loadIcloudData(); 
+        }
 
         function switchManagerTab(tab) {
             ['secDevices', 'secIncoming', 'secDebts', 'secIcloud'].forEach(s => document.getElementById(s).classList.add('hidden'));
@@ -265,7 +330,7 @@
             document.getElementById('debtForm').reset(); loadDebtsData();
         });
 
-        // --- إدارة الديون التي علينا للموردين (طلبك رقم 1 🔥) ---
+        // --- إدارة الديون التي علينا للموردين ---
         async function loadSupplierDebtsData() {
             const res = await fetch('/api/supplier-debts'); supplierDebts = await res.json() || []; let sum = 0;
             const container = document.getElementById('supplierDebtsContainer'); container.innerHTML = '';
@@ -322,7 +387,6 @@
             const pay_method = document.getElementById(`payMethod-${id}`).value;
             const transfer_to_number = document.getElementById(`payNumber-${id}`).value || 'مباشر';
             const settled_date = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            
             await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true, pay_method, transfer_to_number, settled_date }) });
             loadSupplierDebtsData();
         }
@@ -379,7 +443,6 @@
                 let colorClass = "bg-blue-950/20 border-blue-500/20 text-blue-400";
                 let displayStatus = d.status;
 
-                // إصلاح معالجة الرفض التام وعرضه السينمائي للزبون أونلاين 🎯
                 if(d.status === 'طلب معلق') { colorClass = "bg-amber-950/20 border-amber-500/20 text-amber-400"; displayStatus = "قيد المراجعة والانتظار ⏳"; }
                 if(d.status === 'مرفوض') { colorClass = "bg-red-950/20 border-red-500/20 text-red-400"; displayStatus = "تم رفض الطلب ❌ (لا يمكن صيانته أو السيرفر مغلق)"; }
                 if(d.status === 'قيد الانتظار') { colorClass = "bg-indigo-950/20 border-indigo-500/20 text-indigo-400"; displayStatus = "تم قبول جهازك وبدأ العمل عليه ⚙️"; }
@@ -396,7 +459,10 @@
         }
 
         async function toggleDevicePaid(id, val) { await fetch(`/api/devices/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: val })}); loadDevicesData(); }
-        if(localStorage.getItem('taha_auth') === 'true') loadManagerDashboard();
+        document.getElementById('passwordInput').addEventListener('keyup', (e) => { if(e.key === 'Enter') checkLogin(); });
+
+        // بدء فحص الأمان عند تحميل الصفحة فوراً
+        checkSessionValidity();
     </script>
 </body>
 </html>
