@@ -4,14 +4,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
-// ربط السحاب المستقر والمفتاح العام النظيف 🚀
 const SUPABASE_URL = 'https://buxnqmmbecgtnckygudx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1eG5xbW1iZWNndG5ja3lndWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTA3MjUsImV4cCI6MjA5NjA2NjcyNX0.jqlt5oguM2O9Bh-6rdb61XrqkoOKss8qxUGu-ZixcL0';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// دالة الاتصال المباشر بالسحاب باستخدام الـ fetch المدمج بالنظام
 async function supabaseRequest(endpoint, method = 'GET', body = null) {
     try {
         const options = {
@@ -24,22 +22,13 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
             }
         };
         if (body) options.body = JSON.stringify(body);
-        
-        // استخدام fetch المدمج في Node.js لحل مشكلة الانهيار على ريندر
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
-        if (!res.ok) {
-            const errText = await res.text();
-            console.error(`Supabase Error [${res.status}]:`, errText);
-            return null;
-        }
+        if (!res.ok) return null;
         return await res.json();
-    } catch (err) {
-        console.error("Fetch Exception:", err);
-        return null;
-    }
+    } catch (err) { return null; }
 }
 
-// --- خدمات صيانة الأجهزة والحسابات المالية ---
+// جلب الصيانة والإحصائيات الشاملة (بما فيها حسبة الـ 50% والـ 30%)
 app.get('/api/devices', async (req, res) => {
     try {
         const devices = await supabaseRequest('devices?select=*') || [];
@@ -47,8 +36,8 @@ app.get('/api/devices', async (req, res) => {
         const withdrawn = (config && config[0]) ? parseFloat(config[0].technician_withdrawn) || 0 : 0;
 
         let totalSoftwareIncome = 0;
+        let totalPartnerIncome = 0; // للحسبة الجديدة (30%)
         let totalHardwareIncome = 0;
-        let pendingNextWeek = 0; 
         const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
         if (Array.isArray(devices)) {
@@ -58,118 +47,97 @@ app.get('/api/devices', async (req, res) => {
                 const netProfit = price - costOut;
                 const devDate = parseInt(dev.id) || Date.now(); 
 
-                if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض') {
-                    if (dev.is_paid) {
-                        if (dev.issue_type === 'سوفتوير' && devDate >= oneWeekAgo) {
-                            totalSoftwareIncome += netProfit;
-                        } else if (dev.issue_type !== 'سوفتوير') {
-                            totalHardwareIncome += netProfit;
-                        }
+                if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض' && dev.is_paid) {
+                    if (dev.issue_type === 'سوفتوير' && devDate >= oneWeekAgo) {
+                        totalSoftwareIncome += netProfit;
+                    } else if (dev.issue_type === 'صيانة شريك (30%)') {
+                        totalPartnerIncome += netProfit;
                     } else {
-                        if (dev.issue_type === 'سوفتوير') {
-                            pendingNextWeek += (netProfit * 0.5); 
-                        }
+                        totalHardwareIncome += netProfit;
                     }
                 }
             });
         }
 
-        const myShareTotal = totalSoftwareIncome * 0.5;
-        const sortedDevices = Array.isArray(devices) ? [...devices].sort((a, b) => b.id - a.id) : [];
+        const myShare = totalSoftwareIncome * 0.5;
+        const partnerShare = totalPartnerIncome * 0.3; // حسبة الـ 30%
 
         res.json({
-            devices: sortedDevices, 
+            devices: Array.isArray(devices) ? [...devices].sort((a, b) => b.id - a.id) : [], 
             stats: {
                 totalSoftwareWeek: totalSoftwareIncome,
-                myShareWeek: myShareTotal,
-                shopShareWeek: totalSoftwareIncome * 0.5,
-                technicianWithdrawn: withdrawn,
-                myRemaining: myShareTotal - withdrawn,
-                pendingNextWeek: pendingNextWeek,
-                totalHardware: totalHardwareIncome
+                myShareWeek: myShare,
+                myRemaining: myShare - withdrawn,
+                totalPartner: totalPartnerIncome,
+                partnerShareWeek: partnerShare, // حصة الشريك الآخر جاهزة للعرض
+                totalHardware: totalHardwareIncome,
+                technicianWithdrawn: withdrawn
             }
         });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في الاتصال بقاعدة البيانات السحابية" });
-    }
-});
-
-app.post('/api/withdraw', async (req, res) => {
-    try {
-        const { amount } = req.body;
-        const config = await supabaseRequest('shop_config?id=eq.1&select=*') || [];
-        const currentWithdrawn = (config && config[0]) ? parseFloat(config[0].technician_withdrawn) || 0 : 0;
-        const newTotal = currentWithdrawn + (parseFloat(amount) || 0);
-
-        await supabaseRequest('shop_config?id=eq.1', 'PATCH', { technician_withdrawn: newTotal });
-        res.json({ message: "تم تحديث السحاب بنجاح" });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في تحديث المسحوبات" });
-    }
+    } catch (err) { res.status(500).json({ error: "خطأ في السحاب" }); }
 });
 
 app.post('/api/devices', async (req, res) => {
     try {
-        const { customer_name, phone_model, issue_type, notes, cost, extra_cost, is_client_order } = req.body;
+        const { customer_name, phone_model, issue_type, notes, cost, extra_cost, transfer_number, transfer_name, transfer_platform } = req.body;
         const newDevice = {
             id: Date.now(), 
-            date_string: new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-            customer_name, phone_model, issue_type: issue_type || 'سوفتوير', notes,
+            date_string: new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'short' }),
+            customer_name, phone_model, issue_type, notes,
             cost: parseFloat(cost) || 0, extra_cost: parseFloat(extra_cost) || 0,
-            status: is_client_order ? 'طلب معلق' : 'قيد الانتظار', is_paid: false, reply_message: ''
+            status: 'قيد الانتظار', is_paid: false, reply_message: '',
+            transfer_number, transfer_name, transfer_platform
         };
         await supabaseRequest('devices', 'POST', newDevice);
-        res.json({ message: "تم الحفظ أونلاين بنجاح", id: newDevice.id });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في الحفظ السحابي" });
-    }
+        res.json({ message: "تم الحفظ بنجاح" });
+    } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
 app.put('/api/devices/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        const updateFields = req.body;
-        if (updateFields.cost !== undefined) updateFields.cost = parseFloat(updateFields.cost) || 0;
-        if (updateFields.extra_cost !== undefined) updateFields.extra_cost = parseFloat(updateFields.extra_cost) || 0;
-
-        await supabaseRequest(`devices?id=eq.${id}`, 'PATCH', updateFields);
-        res.json({ message: "تم التعديل بنجاح" });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في تحديث البيانات" });
-    }
+        await supabaseRequest(`devices?id=eq.${req.params.id}`, 'PATCH', req.body);
+        res.json({ message: "تم التحديث" });
+    } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
 app.delete('/api/devices/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        await supabaseRequest(`devices?id=eq.${id}`, 'DELETE');
-        res.json({ message: "تم الحذف بنجاح" });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في الحذف" });
-    }
+        await supabaseRequest(`devices?id=eq.${req.params.id}`, 'DELETE');
+        res.json({ message: "تم الحذف" });
+    } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
-// --- خدمات الآيكلود والسيرفر ---
+// --- إداراة الديون (Debts API) ---
+app.get('/api/debts', async (req, res) => {
+    const debts = await supabaseRequest('shop_debts?select=*') || [];
+    res.json(debts.sort((a, b) => b.id - a.id));
+});
+
+app.post('/api/debts', async (req, res) => {
+    const { customer_name, amount, items_taken } = req.body;
+    const newDebt = {
+        customer_name, amount: parseFloat(amount) || 0, items_taken,
+        date_string: new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }),
+        is_settled: false
+    };
+    await supabaseRequest('shop_debts', 'POST', newDebt);
+    res.json({ message: "تم تسجيل الدين" });
+});
+
+app.put('/api/debts/:id', async (req, res) => {
+    await supabaseRequest(`shop_debts?id=eq.${req.params.id}`, 'PATCH', req.body);
+    res.json({ message: "تم تحديث الدين" });
+});
+
+app.delete('/api/debts/:id', async (req, res) => {
+    await supabaseRequest(`shop_debts?id=eq.${req.params.id}`, 'DELETE');
+    res.json({ message: "تم حذف السجل" });
+});
+
+// --- خدمات الآيكلود ---
 app.get('/api/icloud-services', async (req, res) => {
-    try {
-        const services = await supabaseRequest('icloud_services?select=*') || [];
-        res.json(services);
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في جلب خدمات الآيكلود" });
-    }
+    const services = await supabaseRequest('icloud_services?select=*') || [];
+    res.json(services);
 });
 
-app.put('/api/icloud-services/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status, cost_ils, expected_time } = req.body;
-        await supabaseRequest(`icloud_services?id=eq.${id}`, 'PATCH', { status, cost_ils: parseFloat(cost_ils), expected_time });
-        res.json({ message: "تم تحديث خدمة الآيكلود بالسحاب" });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في تحديث خدمة الآيكلود" });
-    }
-});
-
-app.listen(PORT, () => {
-    console.log(`🚀 سيرفر طه فون مستقر ومدمج بالكامل يعمل على المنفذ ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 السيرفر الشامل يعمل على منفذ ${PORT}`));
