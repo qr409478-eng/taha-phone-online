@@ -85,7 +85,7 @@
                         </select>
                         <input type="number" id="cost" placeholder="المبلغ المطلوب الكامل..." required class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 font-mono">
                         <input type="number" id="extraCost" placeholder="تكلفة القطع الخارجية ان وجدت..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 font-mono">
-                        <input type="text" id="notes" placeholder="ملاحظات العطل والقطع المبدلة..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2">
+                        <input type="text" id="notes" placeholder="ملاحظات العطل..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2">
                         <button type="submit" class="sm:col-span-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition-all">حفظ وتثبيت أونلاين الحسبة</button>
                     </form>
                 </div>
@@ -148,7 +148,7 @@
             </div>
             
             <div class="flex gap-2">
-                <input type="text" id="clientSearchInput" placeholder="اكتب اسمك الثلاثي هنا..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-center focus:outline-none focus:border-blue-500">
+                <input type="text" id="clientSearchInput" placeholder="اكتب اسمك الثلاثي هنا للبحث وفحص الرد..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-center focus:outline-none focus:border-blue-500">
                 <button onclick="clientSearch()" class="bg-blue-600 hover:bg-blue-500 text-slate-100 font-bold px-5 rounded-xl text-xs transition-all">افحص الحين</button>
             </div>
 
@@ -178,7 +178,7 @@
         function showClientView() { document.getElementById('clientSection').classList.remove('hidden'); document.getElementById('loginSection').classList.add('hidden'); document.getElementById('shopSection').classList.add('hidden'); fetchClientData(); }
         function checkLogin() { if(document.getElementById('passwordInput').value === '720') { localStorage.setItem('taha_auth', 'true'); resetSessionTimer(); loadManagerDashboard(); } else { alert('رمز المرور خاطئ يا هندسة!'); } }
         function logoutTechnical() { localStorage.removeItem('taha_auth'); localStorage.removeItem('last_action_time'); document.getElementById('shopSection').classList.add('hidden'); document.getElementById('authChoice').classList.remove('hidden'); document.getElementById('loginSection').classList.add('hidden'); document.getElementById('passwordInput').value = ''; }
-        function loadManagerDashboard() { document.getElementById('loginSection').classList.add('hidden'); document.getElementById('authChoice').classList.add('hidden'); document.getElementById('shopSection').classList.remove('hidden'); loadDevicesData(); loadDebtsData(); loadSupplierDebtsData(); loadIcloudData(); }
+        function loadManagerDashboard() { document.getElementById('loginSection').classList.add('hidden'); document.getElementById('authChoice').mathbf{add}('hidden'); document.getElementById('shopSection').classList.remove('hidden'); loadDevicesData(); loadDebtsData(); loadSupplierDebtsData(); loadIcloudData(); }
 
         function switchManagerTab(tab) {
             ['secDevices', 'secIncoming', 'secDebts', 'secIcloud'].forEach(s => document.getElementById(s).classList.add('hidden'));
@@ -189,7 +189,7 @@
             else { document.getElementById('secIcloud').classList.remove('hidden'); document.getElementById('t3').className = "text-blue-400 border-b-2 border-blue-500 font-bold pb-2 px-3"; }
         }
 
-        // الحسبة البرمجية المحلية الصارمة لمنع تصفير الأرقام ومطابقة الخيارات 100%
+        // دالة تصفية الحسبة الفورية محلياً بناءً على الأجهزة الفعلية
         function recalculateStatsLocally() {
             let totalSoftware = 0;
             let myRemaining = 0;
@@ -209,8 +209,7 @@
                 totalExtra += extCost;
                 totalHardware += fullCost;
 
-                // دعم شامل لكافة صيغ الكلمات المدخلة من الفورم أو من قاعدة البيانات
-                if (d.issue_type === 'سوفتوير' || d.issue_type === 'البرمجة' || d.issue_type === 'البرمجة (حسبة 50%)') {
+                if (d.issue_type === 'سوفتوير' || d.issue_type === 'البرمجة') {
                     totalSoftware += (cleanNet * 0.5);
                     myRemaining += (cleanNet * 0.5);
                 } else if (d.issue_type === 'صيانة شريك' || d.issue_type === 'الصيانة (30%)') {
@@ -263,12 +262,12 @@
                     incomingContainer.appendChild(incCard);
                 } else {
                     const card = document.createElement('div');
-                    let issueLabel = (d.issue_type === 'سوفتوير' || d.issue_type === 'البرمجة' || d.issue_type === 'البرمجة (حسبة 50%)') ? 'برمجة 50%' : ((d.issue_type === 'صيانة شريك' || d.issue_type === 'الصيانة (30%)') ? 'صيانة 30%' : 'عام للمحل');
+                    let issueLabel = (d.issue_type === 'سوفتوير' || d.issue_type === 'البرمجة') ? 'برمجة 50%' : ((d.issue_type === 'صيانة شريك' || d.issue_type === 'الصيانة (30%)') ? 'صيانة 30%' : 'عام للمحل');
                     card.className = "bg-slate-900/50 border border-slate-800 p-3 rounded-xl flex justify-between items-center text-xs";
                     card.innerHTML = `
                         <div class="space-y-1">
                             <p class="font-bold text-slate-200"><input type="text" value="${d.customer_name}" onchange="updateDeviceFields('${d.id}', {customer_name: this.value})" class="bg-transparent focus:bg-slate-950 rounded px-1 text-teal-400"> (${d.phone_model})</p>
-                            <p class="text-slate-400 text-[11px]">نوع: <span class="text-purple-400">${issueLabel}</span> | قطع: <span class="text-red-400 font-mono">${d.extra_cost || 0} ₪</span> | عطل: <input type="text" value="${d.notes||''}" onchange="updateDeviceFields('${d.id}', {notes: this.value})" class="bg-transparent text-slate-300 focus:bg-slate-950 rounded px-1 w-44"></p>
+                            <p class="text-slate-400 text-[11px]">نوع: <span class="text-purple-400">${issueLabel}</span> | قطعة خارجية: <span class="text-red-400 font-mono">${d.extra_cost || 0} ₪</span> | ملاحظة: <input type="text" value="${d.notes||''}" onchange="updateDeviceFields('${d.id}', {notes: this.value})" class="bg-transparent text-slate-300 focus:bg-slate-950 rounded px-1 w-44"></p>
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="number" id="costInput-${d.id}" value="${d.cost}" class="w-14 bg-slate-950 border border-slate-800 text-center font-mono font-bold text-teal-400 p-1 rounded">
@@ -286,7 +285,7 @@
         async function saveDeviceCost(id) {
             const costVal = document.getElementById(`costInput-${id}`).value;
             await updateDeviceFields(id, { cost: costVal });
-            alert("تم حفظ الحسبة وتحديث الكروت بنجاح! 🚀");
+            alert("تم حفظ السعر وتحديث الكروت بنجاح! 🚀");
             loadDevicesData();
         }
 
@@ -302,7 +301,7 @@
             const issue_type = document.getElementById(`incType-${id}`) ? document.getElementById(`incType-${id}`).value : 'سوفتوير';
             const reply_message = document.getElementById(`incReply-${id}`) ? document.getElementById(`incReply-${id}`).value : '';
             await fetch(`/api/devices/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: statusField, cost, issue_type, reply_message }) });
-            alert('تم الرد وتحديث طلب الزبون!'); loadDevicesData();
+            alert('تم الرد بنجاح!'); loadDevicesData();
         }
 
         document.getElementById('deviceForm').addEventListener('submit', async (e) => {
@@ -327,7 +326,7 @@
             loadDevicesData();
         });
 
-        // --- سجل الديون الصادر ووارد الشركات ---
+        // --- الديون والشركات ---
         async function loadDebtsData() {
             const res = await fetch('/api/debts'); allDebts = await res.json() || []; let sum = 0;
             const container = document.getElementById('debtsContainer'); container.innerHTML = '';
@@ -343,7 +342,7 @@
                     <div class="flex items-center gap-2">
                         <input type="number" id="debtAmt-${db.id}" value="${db.amount}" class="w-16 bg-slate-950 border border-slate-800 font-mono font-bold text-red-400 p-1 rounded text-center">
                         <button onclick="saveDebtAmount('${db.id}')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-slate-950 text-[10px] px-1.5 py-1 rounded border border-red-500/30 transition-all font-bold">حفظ 💾</button>
-                        <button onclick="toggleDebtSettled('${db.id}', ${!db.is_settled})" class="px-2 py-1 rounded font-black text-[10px] ${db.is_settled?'bg-slate-800 text-slate-400':'bg-red-500 text-slate-950'}">${db.is_settled?'مستلم ✅':'قبض الدين ❌'}</button>
+                        <button onclick="toggleDebtSettled('${db.id}', ${!db.is_settled})" class="px-2 py-1 rounded font-black text-[10px] ${db.is_settled?'bg-slate-800 text-slate-400':'bg-red-500 text-slate-950'}">${db.is_settled?'مستلم ✅':'قبض ❌'}</button>
                         <button onclick="deleteDebt('${db.id}')" class="text-red-400 hover:text-red-500 font-bold px-1 text-sm">🗑️</button>
                     </div>
                 `;
@@ -355,12 +354,10 @@
         async function saveDebtAmount(id) {
             const amtVal = document.getElementById(`debtAmt-${id}`).value;
             await updateDebtFields(id, { amount: amtVal });
-            alert("تم حفظ قيمة الدين بنجاح!");
-            loadDebtsData();
+            alert("تم تحديث الدين!"); loadDebtsData();
         }
-
         async function updateDebtFields(id, fields) { await fetch(`/api/debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(fields) }); }
-        async function deleteDebt(id) { if(confirm("حذف سجل هذا الدين نهائياً؟")) { await fetch(`/api/debts/${id}`, { method: 'DELETE' }); loadDebtsData(); } }
+        async function deleteDebt(id) { if(confirm("حذف الدين؟")) { await fetch(`/api/debts/${id}`, { method: 'DELETE' }); loadDebtsData(); } }
         async function toggleDebtSettled(id, status) { await fetch(`/api/debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_settled: status })}); loadDebtsData(); }
 
         document.getElementById('debtForm').addEventListener('submit', async (e) => {
@@ -372,7 +369,6 @@
         async function loadSupplierDebtsData() {
             const res = await fetch('/api/supplier-debts'); supplierDebts = await res.json() || []; let sum = 0;
             const container = document.getElementById('supplierDebtsContainer'); container.innerHTML = '';
-            
             supplierDebts.forEach(sd => {
                 if(!sd.is_paid) sum += parseFloat(sd.amount);
                 const card = document.createElement('div');
@@ -380,20 +376,19 @@
                 card.innerHTML = `
                     <div class="flex flex-wrap justify-between items-center gap-2">
                         <div>
-                            <span class="font-bold text-slate-200 text-sm">${sd.supplier_name}</span> <span class="text-slate-400 font-mono">(${sd.supplier_phone})</span>
-                            <p class="text-[10px] text-slate-400">تاريخ: ${sd.taken_date || ''} | بضاعة: ${sd.notes}</p>
-                            ${sd.is_paid ? `<p class="text-emerald-400 font-bold text-[10px]">✅ تم السداد: ${sd.settled_date} (${sd.pay_method})</p>` : ''}
+                            <span class="font-bold text-slate-200 text-sm">${sd.supplier_name}</span>
+                            <p class="text-[10px] text-slate-400">بضاعة: ${sd.notes}</p>
+                            ${sd.is_paid ? `<p class="text-emerald-400 font-bold text-[10px]">✅ سددت: ${sd.settled_date} (${sd.pay_method})</p>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="number" id="supplierAmt-${sd.id}" value="${sd.amount}" class="w-16 bg-slate-950 border border-slate-800 text-center font-mono font-bold text-amber-400 p-1 rounded">
                             <button onclick="saveSupplierDebtAmount('${sd.id}')" class="bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-slate-950 text-[10px] px-1.5 py-1 rounded border border-amber-500/30 transition-all font-bold">حفظ 💾</button>
                             ${!sd.is_paid ? `
                                 <div class="flex gap-1 items-center bg-slate-950 p-1.5 rounded-lg border border-slate-800">
-                                    <select id="payMethod-${sd.id}" class="bg-slate-900 text-[10px] rounded p-1 text-slate-300"><option value="جوال بي">جوال بي</option><option value="محفظة رقمية">محفظة رقمية</option><option value="كاش">كاش</option></select>
-                                    <input type="text" id="payNumber-${sd.id}" placeholder="رقم التحويل..." class="w-24 bg-slate-900 text-[10px] rounded p-1 font-mono text-center">
-                                    <button onclick="settleSupplierDebt('${sd.id}')" class="bg-amber-500 text-slate-950 px-2 py-1 rounded font-bold text-[10px]">تسجيل سداد</button>
+                                    <select id="payMethod-${sd.id}" class="bg-slate-900 text-[10px] rounded p-1 text-slate-300"><option value="جوال بي">جوال بي</option><option value="كاش">كاش</option></select>
+                                    <button onclick="settleSupplierDebt('${sd.id}')" class="bg-amber-500 text-slate-950 px-2 py-1 rounded font-bold text-[10px]">سداد</button>
                                 </div>
-                            ` : `<button onclick="unsettleSupplierDebt('${sd.id}')" class="bg-slate-800 text-slate-400 px-2 py-1 rounded text-[10px]">إلغاء السداد</button>`}
+                            ` : `<button onclick="unsettleSupplierDebt('${sd.id}')" class="bg-slate-800 text-slate-400 px-2 py-1 rounded text-[10px]">إلغاء</button>`}
                             <button onclick="deleteSupplierDebt('${sd.id}')" class="text-red-500 text-sm font-bold px-1">🗑️</button>
                         </div>
                     </div>
@@ -406,97 +401,71 @@
         async function saveSupplierDebtAmount(id) {
             const amtVal = document.getElementById(`supplierAmt-${id}`).value;
             await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ amount: amtVal }) });
-            alert("تم تحديث دين المورد!"); loadSupplierDebtsData();
+            alert("تم التعديل!"); loadSupplierDebtsData();
         }
-
         document.getElementById('supplierDebtForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await fetch('/api/supplier-debts', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ supplier_name: document.getElementById('sdName').value, supplier_phone: document.getElementById('sdPhone').value, amount: document.getElementById('sdAmount').value, notes: document.getElementById('sdNotes').value })
-            });
+            await fetch('/api/supplier-debts', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ supplier_name: document.getElementById('sdName').value, supplier_phone: document.getElementById('sdPhone').value, amount: document.getElementById('sdAmount').value, notes: document.getElementById('sdNotes').value }) });
             document.getElementById('supplierDebtForm').reset(); loadSupplierDebtsData();
         });
 
         async function settleSupplierDebt(id) {
             const pay_method = document.getElementById(`payMethod-${id}`).value;
-            const transfer_to_number = document.getElementById(`payNumber-${id}`).value || 'مباشر';
-            const settled_date = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
-            await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true, pay_method, transfer_to_number, settled_date }) });
+            const settled_date = new Date().toLocaleDateString('ar-EG');
+            await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: true, pay_method, settled_date }) });
             loadSupplierDebtsData();
         }
-        async function unsettleSupplierDebt(id) { await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: false, pay_method: '', transfer_to_number: '', settled_date: '' }) }); loadSupplierDebtsData(); }
-        async function deleteSupplierDebt(id) { if(confirm("حذف قيد المورد؟")) { await fetch(`/api/supplier-debts/${id}`, { method: 'DELETE' }); loadSupplierDebtsData(); } }
+        async function unsettleSupplierDebt(id) { await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: false, pay_method: '', settled_date: '' }) }); loadSupplierDebtsData(); }
+        async function deleteSupplierDebt(id) { if(confirm("حذف؟")) { await fetch(`/api/supplier-debts/${id}`, { method: 'DELETE' }); loadSupplierDebtsData(); } }
 
-        // --- iCloud سيرفر ---
+        // --- السحابة والزبائن ---
         async function loadIcloudData() {
             const res = await fetch('/api/icloud-services'); icloudServices = await res.json() || [];
             const container = document.getElementById('secIcloud'); container.innerHTML = '';
             icloudServices.forEach(srv => {
                 const div = document.createElement('div'); div.className = "bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-xs space-y-3";
                 div.innerHTML = `
-                    <div class="flex justify-between font-bold border-b border-slate-800 pb-2"><span>${srv.service_name}</span><span class="${srv.status==='شغالة'?'text-emerald-400':'text-red-400'}">${srv.status}</span></div>
+                    <div class="flex justify-between font-bold border-b border-slate-800 pb-2"><span>${srv.service_name}</span></div>
                     <div class="grid grid-cols-2 gap-2">
                         <input type="number" id="price-${srv.id}" value="${srv.cost_ils}" class="bg-slate-950 border border-slate-800 p-1.5 rounded font-mono text-teal-300 text-center">
                         <input type="text" id="time-${srv.id}" value="${srv.expected_time}" class="bg-slate-950 border border-slate-800 p-1.5 rounded text-center text-slate-300">
                     </div>
-                    <select id="status-${srv.id}" class="w-full bg-slate-950 border border-slate-800 p-1.5 rounded text-slate-300"><option value="شغالة" ${srv.status==='شغالة'?'selected':''}>🟢 شغالة</option><option value="متوقفة" ${srv.status==='متوقفة'?'selected':''}>🔴 متوقفة</option></select>
-                    <button onclick="saveIcloudService('${srv.id}')" class="w-full bg-teal-500/20 text-teal-400 py-1.5 rounded border border-teal-500/30">💾 حفظ السيرفر</button>
+                    <button onclick="saveIcloudService('${srv.id}')" class="w-full bg-teal-500/20 text-teal-400 py-1.5 rounded">💾 حفظ</button>
                 `;
                 container.appendChild(div);
             });
         }
-        async function saveIcloudService(id) { await fetch(`/api/icloud-services/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ cost_ils: document.getElementById(`price-${id}`).value, expected_time: document.getElementById(`time-${id}`).value, status: document.getElementById(`status-${id}`).value }) }); alert('تم الحفظ!'); loadIcloudData(); }
+        async function saveIcloudService(id) { await fetch(`/api/icloud-services/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ cost_ils: document.getElementById(`price-${id}`).value, expected_time: document.getElementById(`time-${id}`).value }) }); alert('حُفظ!'); loadIcloudData(); }
 
-        // --- الزبائن العامه وتتبع الأجهزة الواردة ---
         async function fetchClientData() {
             const r1 = await fetch('/api/devices'); const d1 = await r1.json(); allDevices = d1.devices || [];
             const r2 = await fetch('/api/icloud-services'); icloudServices = await r2.json() || [];
             const container = document.getElementById('clientIcloudContainer'); container.innerHTML = '';
             icloudServices.forEach(s => {
-                const div = document.createElement('div'); div.className = "bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1";
-                div.innerHTML = `<div class="flex justify-between font-bold"><span>${s.service_name}</span> <span class="${s.status==='شغالة'?'text-emerald-400':'text-red-400'}">${s.status}</span></div><p class="text-slate-400 font-mono text-[11px]">الوقت: ${s.expected_time} | السعر: ${s.cost_ils} ₪</p>`;
+                const div = document.createElement('div'); div.className = "bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs";
+                div.innerHTML = `<b>${s.service_name}</b> <p class="text-slate-400">${s.expected_time} | ${s.cost_ils} ₪</p>`;
                 container.appendChild(div);
             });
         }
 
         document.getElementById('clientOrderForm').addEventListener('submit', async (e) => {
-            e.preventDefault(); const customer_name = document.getElementById('clName').value;
-            await fetch('/api/devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ customer_name, phone_model: document.getElementById('clModel').value, notes: document.getElementById('clNotes').value, is_client_order: true }) });
-            alert(`👋 تم إرسال جهازك بنجاح! تابع حالة الرد بالبحث عن اسمك.`);
-            document.getElementById('clientOrderForm').reset(); fetchClientData();
+            e.preventDefault();
+            await fetch('/api/devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ customer_name: document.getElementById('clName').value, phone_model: document.getElementById('clModel').value, notes: document.getElementById('clNotes').value, is_client_order: true }) });
+            alert(`👋 تم الإرسال!`); document.getElementById('clientOrderForm').reset(); fetchClientData();
         });
 
         function clientSearch() {
             const query = document.getElementById('clientSearchInput').value.toLowerCase().trim();
             const resultDiv = document.getElementById('clientResult'); resultDiv.innerHTML = ''; if(!query) return;
             const filtered = allDevices.filter(d => d.customer_name.toLowerCase().includes(query));
-            if(filtered.length === 0) { resultDiv.innerHTML = `<p class="text-center p-3 text-xs bg-slate-900 rounded-xl text-slate-400">❌ لم يتم العثور على أي طلب مسجل بهذا الاسم</p>`; return; }
-            
             filtered.forEach(d => {
-                const box = document.createElement('div'); let colorClass = "bg-blue-950/20 border-blue-500/20 text-blue-400"; let displayStatus = d.status;
-                if(d.status === 'طلب معلق') { colorClass = "bg-amber-950/20 border-amber-500/20 text-amber-400"; displayStatus = "قيد المراجعة والانتظار ⏳"; }
-                if(d.status === 'مرفوض') { colorClass = "bg-red-950/20 border-red-500/20 text-red-400"; displayStatus = "تم رفض الطلب من الفني ❌"; }
-                if(d.status === 'قيد الانتظار') { colorClass = "bg-indigo-950/20 border-indigo-500/20 text-indigo-400"; displayStatus = "تم قبول جهازك وبدأ العمل عليه ⚙️"; }
-
-                box.className = `border p-4 rounded-xl text-xs space-y-2 ${colorClass}`;
-                box.innerHTML = `
-                    <div class="flex justify-between font-bold"><span>📱 جهاز: ${d.phone_model}</span> <span class="font-mono">${d.cost > 0 ? d.cost + ' ₪' : 'في انتظار التسعير'}</span></div>
-                    <p class="text-slate-200 font-bold">حالة الجهاز: <span class="underline">${displayStatus}</span></p>
-                    <p class="text-slate-400 text-[11px]">المشكلة: ${d.notes}</p>
-                    ${d.reply_message ? `<div class="bg-slate-950 p-2.5 rounded border border-slate-800 text-teal-300 font-medium">💬 رد الفني: ${d.reply_message}</div>` : ''}
-                `;
+                const box = document.createElement('div'); box.className = "border p-4 rounded-xl text-xs bg-slate-900";
+                box.innerHTML = `<b>📱 ${d.phone_model}</b> - <span class="text-teal-400">${d.cost} ₪</span> <p>الحالة: ${d.status}</p>`;
                 resultDiv.appendChild(box);
             });
         }
 
-        async function toggleDevicePaid(id, val) { 
-            await fetch(`/api/devices/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: val })}); 
-            loadDevicesData(); 
-        }
-        document.getElementById('passwordInput').addEventListener('keyup', (e) => { if(e.key === 'Enter') checkLogin(); });
-
+        async function toggleDevicePaid(id, val) { await fetch(`/api/devices/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: val })}); loadDevicesData(); }
         checkSessionValidity();
     </script>
 </body>
