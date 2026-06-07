@@ -25,7 +25,7 @@
         
         <header class="text-center my-6">
             <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 neon-text tracking-wide mb-1">طـه فـون</h1>
-            <p class="text-xs text-slate-400 uppercase tracking-widest">النظام الموحد للتحكم بالصيانة والديون العكسية والسحابة</p>
+            <p class="text-xs text-slate-400 uppercase tracking-widest">النظام الموحد للتحكم بالصيانةوالسحابة</p>
         </header>
 
         <div id="authChoice" class="flex justify-center gap-4 my-4">
@@ -34,7 +34,7 @@
         </div>
 
         <div id="loginSection" class="hidden bg-slate-900/60 border border-slate-800 p-6 rounded-2xl max-w-sm mx-auto text-center neon-border">
-            <h2 class="text-lg font-bold mb-4 text-teal-400">تسجيل دخول الفني</h2>
+            <h2 class="text-lg font-bold mb-4 text-teal-400">تسجيل دخول المالك</h2>
             <input type="password" id="passwordInput" placeholder="كلمة المرور..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-center text-teal-300 font-mono mb-4 focus:outline-none">
             <button onclick="checkLogin()" class="w-full bg-teal-500 text-slate-950 font-bold py-2 rounded-xl hover:bg-teal-400 transition-all">دخول</button>
         </div>
@@ -44,7 +44,7 @@
                 <div class="flex gap-2 text-xs sm:text-sm">
                     <button id="t1" onclick="switchManagerTab('devices')" class="text-teal-400 border-b-2 border-teal-500 font-bold pb-2 px-3">🛠️ الأجهزة والمالية</button>
                     <button id="t4" onclick="switchManagerTab('incoming')" class="text-slate-400 font-bold pb-2 px-3 relative">📥 طلبات الزبائن <span id="incomingBadge" class="bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full hidden">0</span></button>
-                    <button id="t2" onclick="switchManagerTab('debts')" class="text-slate-400 font-bold pb-2 px-3">💰 دفتر الديون (لنا / علينا)</button>
+                    <button id="t2" onclick="switchManagerTab('debts')" class="text-slate-400 font-bold pb-2 px-3">💰 دفتر الديون (الدين / المدين)</button>
                     <button id="t3" onclick="switchManagerTab('icloud')" class="text-slate-400 font-bold pb-2 px-3">☁️ سيرفر iCloud</button>
                 </div>
                 <button onclick="logoutTechnical()" class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-slate-950 text-xs px-3 py-1 rounded-lg font-bold transition-all">🔒 قفل اللوحة</button>
@@ -53,19 +53,19 @@
             <div id="secDevices" class="space-y-6">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                     <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-xl">
-                        <p class="text-[10px] text-slate-400">أرباح السوفتوير (50%)</p>
+                        <p class="text-[10px] text-slate-400">صافي البرمجة (50%)</p>
                         <p id="statSoftware" class="text-lg font-black text-teal-400">0 ₪</p>
                     </div>
                     <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-xl">
-                        <p class="text-[10px] text-slate-400">متبقي لي الحين</p>
+                        <p class="text-[10px] text-slate-400">المتبقي للمبرمج</p>
                         <p id="statRemaining" class="text-lg font-black text-blue-400">0 ₪</p>
                     </div>
                     <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-xl border-purple-500/20">
-                        <p class="text-[10px] text-purple-400">صيانة الشريك الآخر (30%)</p>
+                        <p class="text-[10px] text-purple-400">صافي الصيانة (30%)</p>
                         <p id="statPartner" class="text-lg font-black text-purple-400">0 ₪</p>
                     </div>
                     <div class="bg-slate-900/40 border border-slate-800 p-3 rounded-xl">
-                        <p class="text-[10px] text-slate-400">إجمالي الهاردوير</p>
+                        <p class="text-[10px] text-slate-400">إجمالي الصيانة والبرمجة</p>
                         <p id="statHardware" class="text-lg font-black text-amber-400">0 ₪</p>
                     </div>
                 </div>
@@ -76,9 +76,9 @@
                         <input type="text" id="customerName" placeholder="اسم الزبون..." required class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 text-slate-200">
                         <input type="text" id="phoneModel" placeholder="موديل الهاتف..." required class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 text-slate-200">
                         <select id="issueType" class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 text-slate-300">
-                            <option value="سوفتوير">سوفتوير (حسبة 50%)</option>
-                            <option value="صيانة شريك (30%)">صيانة شريك (حسبة 30%)</option>
-                            <option value="هاردوير">هاردوير للمحل</option>
+                            <option value="البرمجة">البرمجة (حسبة 50%)</option>
+                            <option value="الصيانة (30%)">الصيانة  (حسبة 30%)</option>
+                            <option value="إجمالي الصيانة والبرمجة">إجمالي الصيانة والبرمجة للمحل</option>
                         </select>
                         <input type="number" id="cost" placeholder="المبلغ المطلوب..." required class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 font-mono">
                         <input type="number" id="extraCost" placeholder="تكلفة القطع الخارجية..." class="bg-slate-950 border border-slate-800 text-xs rounded-xl p-2 font-mono">
