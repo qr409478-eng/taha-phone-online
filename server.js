@@ -28,7 +28,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     } catch (err) { return null; }
 }
 
-// --- خدمات صيانة الأجهزة ---
+// جلب الصيانة والإحصائيات الشاملة مع فرز طلبات الزبائن
 app.get('/api/devices', async (req, res) => {
     try {
         const devices = await supabaseRequest('devices?select=*') || [];
@@ -47,6 +47,7 @@ app.get('/api/devices', async (req, res) => {
                 const netProfit = price - costOut;
                 const devDate = parseInt(dev.id) || Date.now(); 
 
+                // الحسبة فقط للأجهزة المقبولة والمدفوعة وليست المعلقة
                 if (dev.status !== 'طلب معلق' && dev.status !== 'مرفوض' && dev.is_paid) {
                     if (dev.issue_type === 'سوفتوير' && devDate >= oneWeekAgo) {
                         totalSoftwareIncome += netProfit;
@@ -77,26 +78,35 @@ app.get('/api/devices', async (req, res) => {
     } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
+// استقبال الأجهزة (سواء من المحل أو طلب زبون أونلاين)
 app.post('/api/devices', async (req, res) => {
     try {
-        const { customer_name, phone_model, issue_type, notes, cost, extra_cost, transfer_number, transfer_name, transfer_platform } = req.body;
+        const { customer_name, phone_model, issue_type, notes, cost, extra_cost, transfer_number, transfer_name, transfer_platform, is_client_order } = req.body;
         const newDevice = {
             id: Date.now(), 
             date_string: new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'short' }),
-            customer_name, phone_model, issue_type, notes,
-            cost: parseFloat(cost) || 0, extra_cost: parseFloat(extra_cost) || 0,
-            status: 'قيد الانتظار', is_paid: false, reply_message: '',
-            transfer_number, transfer_name, transfer_platform
+            customer_name, 
+            phone_model, 
+            issue_type: issue_type || 'سوفتوير', 
+            notes,
+            cost: parseFloat(cost) || 0, 
+            extra_cost: parseFloat(extra_cost) || 0,
+            status: is_client_order ? 'طلب معلق' : 'قيد الانتظار', 
+            is_paid: false, 
+            reply_message: '',
+            transfer_number: transfer_number || '', 
+            transfer_name: transfer_name || '', 
+            transfer_platform: transfer_platform || ''
         };
         await supabaseRequest('devices', 'POST', newDevice);
-        res.json({ message: "تم الحفظ بنجاح" });
+        res.json({ message: "تم الحفظ بنجاح", id: newDevice.id });
     } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
 app.put('/api/devices/:id', async (req, res) => {
     try {
         await supabaseRequest(`devices?id=eq.${req.params.id}`, 'PATCH', req.body);
-        res.json({ message: "تم التحديث" });
+        res.json({ message: "تم التحديث بنجاح" });
     } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
@@ -129,12 +139,7 @@ app.put('/api/debts/:id', async (req, res) => {
     res.json({ message: "تم تحديث الدين" });
 });
 
-app.delete('/api/debts/:id', async (req, res) => {
-    await supabaseRequest(`shop_debts?id=eq.${req.params.id}`, 'DELETE');
-    res.json({ message: "تم حذف السجل" });
-});
-
-// --- خدمات الآيكلود والسيرفر (استقبال التعديل وحفظه) ---
+// --- خدمات الآيكلود ---
 app.get('/api/icloud-services', async (req, res) => {
     const services = await supabaseRequest('icloud_services?select=*') || [];
     res.json(services.sort((a, b) => a.id - b.id));
@@ -144,15 +149,9 @@ app.put('/api/icloud-services/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { status, cost_ils, expected_time } = req.body;
-        await supabaseRequest(`icloud_services?id=eq.${id}`, 'PATCH', { 
-            status, 
-            cost_ils: parseFloat(cost_ils) || 0, 
-            expected_time 
-        });
-        res.json({ message: "تم تحديث الخدمة بنجاح" });
-    } catch (err) {
-        res.status(500).json({ error: "خطأ في التعديل" });
-    }
+        await supabaseRequest(`icloud_services?id=eq.${id}`, 'PATCH', { status, cost_ils: parseFloat(cost_ils) || 0, expected_time });
+        res.json({ message: "تم التعديل" });
+    } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
-app.listen(PORT, () => console.log(`🚀 السيرفر الشامل يعمل بالكامل`));
+app.listen(PORT, () => console.log(`🚀 السيرفر المتكامل يعمل بكفاءة وحرية تامة`));
