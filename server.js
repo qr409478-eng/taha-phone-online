@@ -28,7 +28,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     } catch (err) { return null; }
 }
 
-// جلب الصيانة والإحصائيات الشاملة (بما فيها حسبة الـ 50% والـ 30%)
+// --- خدمات صيانة الأجهزة ---
 app.get('/api/devices', async (req, res) => {
     try {
         const devices = await supabaseRequest('devices?select=*') || [];
@@ -36,7 +36,7 @@ app.get('/api/devices', async (req, res) => {
         const withdrawn = (config && config[0]) ? parseFloat(config[0].technician_withdrawn) || 0 : 0;
 
         let totalSoftwareIncome = 0;
-        let totalPartnerIncome = 0; // للحسبة الجديدة (30%)
+        let totalPartnerIncome = 0; 
         let totalHardwareIncome = 0;
         const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
@@ -60,7 +60,7 @@ app.get('/api/devices', async (req, res) => {
         }
 
         const myShare = totalSoftwareIncome * 0.5;
-        const partnerShare = totalPartnerIncome * 0.3; // حسبة الـ 30%
+        const partnerShare = totalPartnerIncome * 0.3;
 
         res.json({
             devices: Array.isArray(devices) ? [...devices].sort((a, b) => b.id - a.id) : [], 
@@ -69,12 +69,12 @@ app.get('/api/devices', async (req, res) => {
                 myShareWeek: myShare,
                 myRemaining: myShare - withdrawn,
                 totalPartner: totalPartnerIncome,
-                partnerShareWeek: partnerShare, // حصة الشريك الآخر جاهزة للعرض
+                partnerShareWeek: partnerShare, 
                 totalHardware: totalHardwareIncome,
                 technicianWithdrawn: withdrawn
             }
         });
-    } catch (err) { res.status(500).json({ error: "خطأ في السحاب" }); }
+    } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
 app.post('/api/devices', async (req, res) => {
@@ -107,7 +107,7 @@ app.delete('/api/devices/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: "خطأ" }); }
 });
 
-// --- إداراة الديون (Debts API) ---
+// --- خدمات الديون ---
 app.get('/api/debts', async (req, res) => {
     const debts = await supabaseRequest('shop_debts?select=*') || [];
     res.json(debts.sort((a, b) => b.id - a.id));
@@ -134,10 +134,25 @@ app.delete('/api/debts/:id', async (req, res) => {
     res.json({ message: "تم حذف السجل" });
 });
 
-// --- خدمات الآيكلود ---
+// --- خدمات الآيكلود والسيرفر (استقبال التعديل وحفظه) ---
 app.get('/api/icloud-services', async (req, res) => {
     const services = await supabaseRequest('icloud_services?select=*') || [];
-    res.json(services);
+    res.json(services.sort((a, b) => a.id - b.id));
 });
 
-app.listen(PORT, () => console.log(`🚀 السيرفر الشامل يعمل على منفذ ${PORT}`));
+app.put('/api/icloud-services/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, cost_ils, expected_time } = req.body;
+        await supabaseRequest(`icloud_services?id=eq.${id}`, 'PATCH', { 
+            status, 
+            cost_ils: parseFloat(cost_ils) || 0, 
+            expected_time 
+        });
+        res.json({ message: "تم تحديث الخدمة بنجاح" });
+    } catch (err) {
+        res.status(500).json({ error: "خطأ في التعديل" });
+    }
+});
+
+app.listen(PORT, () => console.log(`🚀 السيرفر الشامل يعمل بالكامل`));
