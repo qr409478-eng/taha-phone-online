@@ -23,9 +23,16 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         };
         if (body) options.body = JSON.stringify(body);
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
-        if (!res.ok) return null;
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error("Supabase Error:", errText);
+            return null;
+        }
         return await res.json();
-    } catch (err) { return null; }
+    } catch (err) { 
+        console.error("Fetch Error:", err);
+        return null; 
+    }
 }
 
 // --- إدارة الأجهزة والصيانة ---
@@ -60,9 +67,20 @@ app.get('/api/devices', async (req, res) => {
 });
 
 app.post('/api/devices', async (req, res) => {
-    const { customer_name, phone_model, issue_type, notes, cost, extra_cost, transfer_number, transfer_name, transfer_platform, is_client_order } = req.body;
-    const newDevice = { id: Date.now(), date_string: new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'short' }), customer_name, phone_model, issue_type: issue_type || 'سوفتوير', notes, cost: parseFloat(cost) || 0, extra_cost: parseFloat(extra_cost) || 0, status: is_client_order ? 'مرفوض' : 'قيد الانتظار', is_paid: false, reply_message: '', transfer_number: transfer_number||'', transfer_name: transfer_name||'', transfer_platform: transfer_platform||'' };
-    if(is_client_order) newDevice.status = 'طلب معلق';
+    const { customer_name, phone_model, issue_type, notes, cost, extra_cost } = req.body;
+    const newDevice = { 
+        id: Date.now(), 
+        date_string: new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'short' }), 
+        customer_name, 
+        phone_model, 
+        issue_type: issue_type || 'سوفتوير', 
+        notes, 
+        cost: parseFloat(cost) || 0, 
+        extra_cost: parseFloat(extra_cost) || 0, 
+        status: req.body.is_client_order ? 'طلب معلق' : 'قيد الانتظار', 
+        is_paid: false, 
+        reply_message: '' 
+    };
     await supabaseRequest('devices', 'POST', newDevice);
     res.json({ message: "تم الحفظ" });
 });
@@ -85,7 +103,14 @@ app.get('/api/debts', async (req, res) => {
 
 app.post('/api/debts', async (req, res) => {
     const { customer_name, amount, items_taken } = req.body;
-    const newDebt = { customer_name, amount: parseFloat(amount) || 0, items_taken, date_string: new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }), is_settled: false };
+    const newDebt = { 
+        id: Date.now(),
+        customer_name, 
+        amount: parseFloat(amount) || 0, 
+        items_taken, 
+        date_string: new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }), 
+        is_settled: false 
+    };
     await supabaseRequest('shop_debts', 'POST', newDebt);
     res.json({ message: "تم التسجيل" });
 });
@@ -100,11 +125,10 @@ app.delete('/api/debts/:id', async (req, res) => {
     res.json({ message: "تم حذف سجل الدين" });
 });
 
-// --- إدارة الديون التي علينا للموردين (جديد 🛒) ---
-// ملاحظة: يتم حفظ البيانات في جدول مستقل لتلافي الاختلاط المالي
+// --- إدارة الديون التي علينا للموردين (supplier_debts) ---
 app.get('/api/supplier-debts', async (req, res) => {
     const sDebts = await supabaseRequest('supplier_debts?select=*') || [];
-    res.json(sDebts.sort((a, b) => b.id - a.id));
+    res.json(Array.isArray(sDebts) ? sDebts.sort((a, b) => b.id - a.id) : []);
 });
 
 app.post('/api/supplier-debts', async (req, res) => {
@@ -121,8 +145,12 @@ app.post('/api/supplier-debts', async (req, res) => {
         pay_method: '',
         transfer_to_number: ''
     };
-    await supabaseRequest('supplier_debts', 'POST', newSupplierDebt);
-    res.json({ message: "تم قيد الدين المورد بنجاح" });
+    const result = await supabaseRequest('supplier_debts', 'POST', newSupplierDebt);
+    if(result) {
+        res.json({ message: "تم قيد دين المورد بنجاح" });
+    } else {
+        res.status(500).json({ error: "فشل الحفظ في قاعدة البيانات" });
+    }
 });
 
 app.put('/api/supplier-debts/:id', async (req, res) => {

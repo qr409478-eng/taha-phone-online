@@ -8,6 +8,15 @@
     <style>
         .neon-border { box-shadow: 0 0 15px rgba(20, 184, 166, 0.4); }
         .neon-text { text-shadow: 0 0 10px rgba(20, 184, 166, 0.5); }
+        /* إلغاء أسهم الارتفاع والانخفاض المزعجة في خانات الأرقام */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
@@ -152,73 +161,21 @@
 
     <script>
         let allDevices = []; let allDebts = []; let supplierDebts = []; let icloudServices = [];
+        const TIMEOUT_DURATION = 30 * 60 * 1000; 
 
-        // --- نظام الحماية وقفل الجلسة الذكي (كل مرة فوت أو كل نصف ساعة عدم نشاط) ---
-        const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 دقيقة بالملي ثانية
-
-        function resetSessionTimer() {
-            if (localStorage.getItem('taha_auth') === 'true') {
-                localStorage.setItem('last_action_time', Date.now().toString());
-            }
-        }
-
-        // الاستماع لحركات المستخدم لتحديث وقت النشاط تلقائياً
-        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
-            document.addEventListener(evt, resetSessionTimer);
-        });
+        function resetSessionTimer() { if (localStorage.getItem('taha_auth') === 'true') { localStorage.setItem('last_action_time', Date.now().toString()); } }
+        ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => { document.addEventListener(evt, resetSessionTimer); });
 
         function checkSessionValidity() {
-            const auth = localStorage.getItem('taha_auth');
-            const lastAction = localStorage.getItem('last_action_time');
-            
-            if (auth === 'true') {
-                if (!lastAction || (Date.now() - parseInt(lastAction) > TIMEOUT_DURATION)) {
-                    // انتهت الـ 30 دقيقة أو تم عمل تحديث كامل بدون جلسة مستمرة
-                    logoutTechnical();
-                } else {
-                    // الجلسة نشطة، أظهر اللوحة فوراً
-                    loadManagerDashboard();
-                }
-            }
+            const auth = localStorage.getItem('taha_auth'); const lastAction = localStorage.getItem('last_action_time');
+            if (auth === 'true') { if (!lastAction || (Date.now() - parseInt(lastAction) > TIMEOUT_DURATION)) { logoutTechnical(); } else { loadManagerDashboard(); } }
         }
 
-        function showLoginSection() { 
-            document.getElementById('loginSection').classList.toggle('hidden'); 
-            document.getElementById('clientSection').classList.add('hidden'); 
-        }
-        
-        function showClientView() { 
-            document.getElementById('clientSection').classList.remove('hidden'); 
-            document.getElementById('loginSection').classList.add('hidden'); 
-            document.getElementById('shopSection').classList.add('hidden'); 
-            fetchClientData(); 
-        }
-        
-        function checkLogin() { 
-            if(document.getElementById('passwordInput').value === '720') { 
-                localStorage.setItem('taha_auth', 'true'); 
-                resetSessionTimer();
-                loadManagerDashboard(); 
-            } else {
-                alert('رمز المرور خاطئ يا هندسة!');
-            }
-        }
-
-        function logoutTechnical() {
-            localStorage.removeItem('taha_auth');
-            localStorage.removeItem('last_action_time');
-            document.getElementById('shopSection').classList.add('hidden');
-            document.getElementById('authChoice').classList.remove('hidden');
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('passwordInput').value = '';
-        }
-
-        function loadManagerDashboard() { 
-            document.getElementById('loginSection').classList.add('hidden'); 
-            document.getElementById('authChoice').classList.add('hidden'); 
-            document.getElementById('shopSection').classList.remove('hidden'); 
-            loadDevicesData(); loadDebtsData(); loadSupplierDebtsData(); loadIcloudData(); 
-        }
+        function showLoginSection() { document.getElementById('loginSection').classList.toggle('hidden'); document.getElementById('clientSection').classList.add('hidden'); }
+        function showClientView() { document.getElementById('clientSection').classList.remove('hidden'); document.getElementById('loginSection').classList.add('hidden'); document.getElementById('shopSection').classList.add('hidden'); fetchClientData(); }
+        function checkLogin() { if(document.getElementById('passwordInput').value === '720') { localStorage.setItem('taha_auth', 'true'); resetSessionTimer(); loadManagerDashboard(); } else { alert('رمز المرور خاطئ يا هندسة!'); } }
+        function logoutTechnical() { localStorage.removeItem('taha_auth'); localStorage.removeItem('last_action_time'); document.getElementById('shopSection').classList.add('hidden'); document.getElementById('authChoice').classList.remove('hidden'); document.getElementById('loginSection').classList.add('hidden'); document.getElementById('passwordInput').value = ''; }
+        function loadManagerDashboard() { document.getElementById('loginSection').classList.add('hidden'); document.getElementById('authChoice').classList.add('hidden'); document.getElementById('shopSection').classList.remove('hidden'); loadDevicesData(); loadDebtsData(); loadSupplierDebtsData(); loadIcloudData(); }
 
         function switchManagerTab(tab) {
             ['secDevices', 'secIncoming', 'secDebts', 'secIcloud'].forEach(s => document.getElementById(s).classList.add('hidden'));
@@ -247,7 +204,7 @@
                     const incCard = document.createElement('div');
                     incCard.className = "bg-slate-900 border border-blue-500/20 p-4 rounded-xl text-xs space-y-3";
                     incCard.innerHTML = `
-                        <div class="flex justify-between font-bold"><span>👤 الزبون: ${d.customer_name}</span><span class="text-blue-400">📱 جهاز: ${d.phone_model}</span></div>
+                        <div class="flex justify-between font-bold"><span>👤 : ${d.customer_name}</span><span class="text-blue-400">📱 جهاز: ${d.phone_model}</span></div>
                         <p class="text-slate-300 bg-slate-950 p-2 rounded">📝 المشكلة: ${d.notes}</p>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
                             <input type="number" id="incPrice-${d.id}" placeholder="حدد السعر المطلـوب..." class="bg-slate-950 border border-slate-800 rounded p-1.5 font-mono text-teal-300">
@@ -269,7 +226,8 @@
                             <p class="text-slate-400 text-[11px]">حالة: <span class="text-teal-400 font-bold">${d.status}</span> | ملاحظة: <input type="text" value="${d.notes||''}" onchange="updateDeviceFields('${d.id}', {notes: this.value})" class="bg-transparent text-slate-300 focus:bg-slate-950 rounded px-1 w-48"></p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="number" value="${d.cost}" onchange="updateDeviceFields('${d.id}', {cost: this.value})" class="w-16 bg-slate-950 border border-slate-800 text-center font-mono font-bold text-teal-400 p-1 rounded">
+                            <input type="number" id="costInput-${d.id}" value="${d.cost}" class="w-16 bg-slate-950 border border-slate-800 text-center font-mono font-bold text-teal-400 p-1 rounded">
+                            <button onclick="saveDeviceCost('${d.id}')" class="bg-teal-500/20 hover:bg-teal-500 text-teal-400 hover:text-slate-950 text-[10px] px-1.5 py-1 rounded border border-teal-500/30 transition-all font-bold">حفظ 💾</button>
                             <button onclick="toggleDevicePaid('${d.id}', ${!d.is_paid})" class="px-2 py-1 rounded font-bold text-[10px] ${d.is_paid?'bg-emerald-500/20 text-emerald-400':'bg-amber-500/20 text-amber-400'}">${d.is_paid?'🟢 مدفوع':'🟡 غير مدفوع'}</button>
                             <button onclick="deleteDevice('${d.id}')" class="text-red-500 hover:text-red-400 font-bold px-1 text-sm">🗑️</button>
                         </div>
@@ -278,6 +236,13 @@
                 }
             });
             const badge = document.getElementById('incomingBadge'); if(pendingCount > 0) { badge.innerText = pendingCount; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+        }
+
+        async function saveDeviceCost(id) {
+            const costVal = document.getElementById(`costInput-${id}`).value;
+            await updateDeviceFields(id, { cost: costVal });
+            alert("تم حفظ وتثبيت السعر الجديد بنجاح في السحاب! 🚀");
+            loadDevicesData();
         }
 
         async function updateDeviceFields(id, fields) { await fetch(`/api/devices/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(fields) }); }
@@ -311,7 +276,8 @@
                         <input type="text" value="${db.items_taken}" onchange="updateDebtFields('${db.id}', {items_taken: this.value})" class="bg-transparent text-slate-400 focus:bg-slate-950 rounded px-1">
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="number" value="${db.amount}" onchange="updateDebtFields('${db.id}', {amount: this.value})" class="w-16 bg-slate-950 border border-slate-800 font-mono font-bold text-red-400 p-1 rounded text-center">
+                        <input type="number" id="debtAmt-${db.id}" value="${db.amount}" class="w-16 bg-slate-950 border border-slate-800 font-mono font-bold text-red-400 p-1 rounded text-center">
+                        <button onclick="saveDebtAmount('${db.id}')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-slate-950 text-[10px] px-1.5 py-1 rounded border border-red-500/30 transition-all font-bold">حفظ 💾</button>
                         <button onclick="toggleDebtSettled('${db.id}', ${!db.is_settled})" class="px-2 py-1 rounded font-black text-[10px] ${db.is_settled?'bg-slate-800 text-slate-400':'bg-red-500 text-slate-950'}">${db.is_settled?'مستلم ✅':'قبض الدين ❌'}</button>
                         <button onclick="deleteDebt('${db.id}')" class="text-red-400 hover:text-red-500 font-bold px-1 text-sm">🗑️</button>
                     </div>
@@ -320,6 +286,14 @@
             });
             document.getElementById('totalDebtsBox').innerText = sum + ' ₪';
         }
+
+        async function saveDebtAmount(id) {
+            const amtVal = document.getElementById(`debtAmt-${id}`).value;
+            await updateDebtFields(id, { amount: amtVal });
+            alert("تم حفظ وتثبيت قيمة الدين بنجاح! 💾");
+            loadDebtsData();
+        }
+
         async function updateDebtFields(id, fields) { await fetch(`/api/debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(fields) }); }
         async function deleteDebt(id) { if(confirm("حذف سجل هذا الدين نهائياً من النظام؟")) { await fetch(`/api/debts/${id}`, { method: 'DELETE' }); loadDebtsData(); } }
         async function toggleDebtSettled(id, status) { await fetch(`/api/debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_settled: status })}); loadDebtsData(); }
@@ -349,7 +323,9 @@
                             ${sd.is_paid ? `<p class="text-emerald-400 font-bold text-[10px]">✅ تم السداد بتاريخ: ${sd.settled_date} عبر (${sd.pay_method}) للحساب: ${sd.transfer_to_number}</p>` : ''}
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="font-mono text-amber-400 font-bold text-sm px-2">${sd.amount} ₪</span>
+                            <input type="number" id="supplierAmt-${sd.id}" value="${sd.amount}" class="w-16 bg-slate-950 border border-slate-800 text-center font-mono font-bold text-amber-400 p-1 rounded">
+                            <button onclick="saveSupplierDebtAmount('${sd.id}')" class="bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-slate-950 text-[10px] px-1.5 py-1 rounded border border-amber-500/30 transition-all font-bold">حفظ 💾</button>
+                            
                             ${!sd.is_paid ? `
                                 <div class="flex gap-1 items-center bg-slate-950 p-1.5 rounded-lg border border-slate-800">
                                     <select id="payMethod-${sd.id}" class="bg-slate-900 text-[10px] rounded p-1 text-slate-300">
@@ -373,14 +349,26 @@
             document.getElementById('totalSupplierDebtsBox').innerText = sum + ' ₪';
         }
 
+        async function saveSupplierDebtAmount(id) {
+            const amtVal = document.getElementById(`supplierAmt-${id}`).value;
+            await fetch(`/api/supplier-debts/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ amount: amtVal }) });
+            alert("تم تحديث دين الشركة/المورد وحفظ القيمة الجديدة! 🔥");
+            loadSupplierDebtsData();
+        }
+
         document.getElementById('supplierDebtForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await fetch('/api/supplier-debts', {
+            const response = await fetch('/api/supplier-debts', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ supplier_name: document.getElementById('sdName').value, supplier_phone: document.getElementById('sdPhone').value, amount: document.getElementById('sdAmount').value, notes: document.getElementById('sdNotes').value })
             });
-            document.getElementById('supplierDebtForm').reset(); loadSupplierDebtsData();
+            if(response.ok) {
+                document.getElementById('supplierDebtForm').reset(); 
+                loadSupplierDebtsData();
+            } else {
+                alert("حدث خطأ أثناء الاتصال بالسيرفر لحفظ الدين المورد");
+            }
         });
 
         async function settleSupplierDebt(id) {
@@ -406,7 +394,7 @@
                         <input type="text" id="time-${srv.id}" value="${srv.expected_time}" class="bg-slate-950 border border-slate-800 p-1.5 rounded text-center text-slate-300">
                     </div>
                     <select id="status-${srv.id}" class="w-full bg-slate-950 border border-slate-800 p-1.5 rounded text-slate-300"><option value="شغالة" ${srv.status==='شغالة'?'selected':''}>🟢 شغالة</option><option value="متوقفة" ${srv.status==='متوقفة'?'selected':''}>🔴 متوقفة</option></select>
-                    <button onclick="saveIcloudService('${srv.id}')" class="w-full bg-teal-500/20 text-teal-400 py-1.5 rounded border border-teal-500/30">💾 حفظ</button>
+                    <button onclick="saveIcloudService('${srv.id}')" class="w-full bg-teal-500/20 text-teal-400 py-1.5 rounded border border-teal-500/30">💾 حفظ السيرفر</button>
                 `;
                 container.appendChild(div);
             });
@@ -428,7 +416,7 @@
         document.getElementById('clientOrderForm').addEventListener('submit', async (e) => {
             e.preventDefault(); const customer_name = document.getElementById('clName').value;
             await fetch('/api/devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ customer_name, phone_model: document.getElementById('clModel').value, notes: document.getElementById('clNotes').value, is_client_order: true }) });
-            alert(`👋 تم إرسال جهازك بنجاح! ابحث باسمك: "${customer_name}" بالأسفل لمتابعة حالة القبول أو الرفض والسعر.`);
+            alert(`👋 تم إرسال جهازك بنجاح! ابحث باسمك لمتابعة حالة القبول أو الرفض والسعر.`);
             document.getElementById('clientOrderForm').reset(); fetchClientData();
         });
 
@@ -461,7 +449,6 @@
         async function toggleDevicePaid(id, val) { await fetch(`/api/devices/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_paid: val })}); loadDevicesData(); }
         document.getElementById('passwordInput').addEventListener('keyup', (e) => { if(e.key === 'Enter') checkLogin(); });
 
-        // بدء فحص الأمان عند تحميل الصفحة فوراً
         checkSessionValidity();
     </script>
 </body>
