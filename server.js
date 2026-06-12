@@ -215,5 +215,5 @@ app.get('/api/financials/analytics', async (req, res) => {
     });
     res.json({ records: data, summary: { total_daily_external_cost: dCost, total_weekly_external_cost: wCost, gross_programmer_income: pInc } });
 });
+app.listen(PORT, () => console.log("Server running on port " + PORT));
 
-app.listen(PORT, () => console.log(\`⚡ Server active on \${PORT}\`));
