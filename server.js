@@ -214,9 +214,10 @@ app.get('/dashboard', (req, res) => {
                 };
                 try {
                     const response = await fetch('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyData) });
+                    const resJson = await response.json();
                     if(response.ok) { alert("🎯 تم حفظ الجهاز وقفل الحسبة بنجاح!"); document.getElementById('deviceForm').reset(); loadData(); }
-                    else { alert("❌ فشل الحفظ في قاعدة البيانات"); }
-                } catch(err) { alert("⚠️ خطأ في الاتصال"); }
+                    else { alert("❌ خطأ بقاعدة البيانات:\\n" + (resJson.error || "غير معروف")); }
+                } catch(err) { alert("⚠️ خطأ في الاتصال بالسيرفر"); }
             });
             window.onload = loadData;
         </script>
@@ -242,15 +243,21 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/devices', async (req, res) => {
     let { user_id, customer_name, customer_phone, device_model, operation_details, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider } = req.body;
+    
     if (!user_id) {
         const { data: uList } = await supabase.from('profiles').select('id').limit(1);
         if (uList && uList.length > 0) user_id = uList[0].id;
     }
+    
+    if (!user_id) {
+        return res.status(400).json({ error: "لا يوجد مستخدم مسجل في جدول profiles. يرجى إنشاء حساب أولاً أو التأكد من جدول profiles في سوبابيس." });
+    }
+
     const { data: dev, error: devErr } = await supabase.from('devices').insert([{ user_id, customer_name, customer_phone, device_model, operation_details, status: 'completed' }]).select().single();
-    if (devErr) return res.status(400).json({ error: devErr.message });
+    if (devErr) return res.status(400).json({ error: "خطأ بجدول الأجهزة: " + devErr.message });
     
     const { error: finErr } = await supabase.from('financial_records').insert([{ device_id: dev.id, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider }]);
-    if (finErr) return res.status(400).json({ error: finErr.message });
+    if (finErr) return res.status(400).json({ error: "خطأ بجدول السجلات المالية: " + finErr.message });
     
     res.status(201).json({ message: "Success" });
 });
@@ -275,4 +282,4 @@ app.get('/api/financials/analytics', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
-        
+         
