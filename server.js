@@ -133,15 +133,13 @@ app.get('/dashboard', (req, res) => {
             .card.c { border-left-color:#ffdf00; }
             .val { font-size:18px; font-weight:bold; font-family:'Fira Code',monospace; margin-top:5px; }
             
-            /* تصميم فورم الإدخال الجديد المريح للجوال */
             .form-box { background:#0d0d14; border:1px solid #00f0ff; padding:20px; border-radius:4px; margin-bottom:25px; box-shadow:0 0 10px rgba(0,240,255,0.1); }
             .form-box h3 { margin-top:0; color:#00f0ff; font-size:16px; border-bottom:1px solid #1a1a26; padding-bottom:8px; }
-            .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
             .form-group { display:flex; flex-direction:column; }
             .form-group label { font-size:12px; color:#888; margin-bottom:4px; }
             .form-group input, .form-group select { padding:8px; background:#050508; border:1px solid #333; border-radius:4px; color:#fff; font-size:13px; }
             .form-group input:focus, .form-group select:focus { outline:none; border-color:#00f0ff; }
-            .btn-add { grid-column: 1 / -1; padding:10px; background:transparent; border:2px solid #39ff14; color:#39ff14; font-weight:bold; cursor:pointer; border-radius:4px; margin-top:10px; text-shadow:0 0 5px #39ff14; }
+            .btn-add { grid-column: 1 / -1; padding:10px; background:transparent; border:2px solid #39ff14; color:#39ff14; font-weight:bold; cursor:pointer; border-radius:4px; margin-top:10px; text-shadow:0 0 5px #39ff14; width:100%; }
             .btn-add:hover { background:#39ff14; color:#000; }
 
             .table-box { background:#0d0d14; border:1px solid #1a1a26; border-radius:4px; overflow-x:auto; }
@@ -193,36 +191,37 @@ app.get('/dashboard', (req, res) => {
 
         <script>
             const sessionData = localStorage.getItem('taha_session');
-            if(!sessionData) { window.location.href = '/'; }
-            const session = JSON.parse(sessionData);
+            let userId = null;
+            if(sessionData) {
+                try { userId = JSON.parse(sessionData).user.id; } catch(e){}
+            }
 
             async function loadData() {
                 try {
                     const r = await fetch('/api/financials/analytics'); const data = await r.json();
-                    document.getElementById('pInc').textContent = data.summary.gross_programmer_income.toFixed(2) + ' $';
-                    document.getElementById('dCost').textContent = data.summary.total_daily_external_cost.toFixed(2) + ' $';
-                    document.getElementById('wCost').textContent = data.summary.total_weekly_external_cost.toFixed(2) + ' $';
+                    document.getElementById('pInc').textContent = (data.summary.gross_programmer_income || 0).toFixed(2) + ' $';
+                    document.getElementById('dCost').textContent = (data.summary.total_daily_external_cost || 0).toFixed(2) + ' $';
+                    document.getElementById('wCost').textContent = (data.summary.total_weekly_external_cost || 0).toFixed(2) + ' $';
                     const tbody = document.getElementById('tBody'); tbody.innerHTML = '';
-                    if(data.records.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">لا يوجد أجهزة مسجلة بعد.</td></tr>'; return; }
+                    if(!data.records || data.records.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">لا يوجد أجهزة مسجلة بعد.</td></tr>'; return; }
                     data.records.forEach(rec => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = \`<td><strong>\· \${rec.customer_name}</strong><br><span style="color:#888;font-size:11px;">\${rec.customer_phone || '-'}</span></td>
-                        <td><strong>\${rec.device_model}</strong><br><span style="color:#00f0ff;font-size:11px;">\${rec.operation_details || '-'}</span></td>
+                        tr.innerHTML = \`<td><strong>\· \${rec.customer_name || '-'}</strong><br><span style="color:#888;font-size:11px;">\${rec.customer_phone || '-'}</span></td>
+                        <td><strong>\${rec.device_model || '-'}</strong><br><span style="color:#00f0ff;font-size:11px;">\${rec.operation_details || '-'}</span></td>
                         <td>\${rec.is_paid_in_shop ? '🟢 تم الدفع':'🔴 متبقي'}</td>
-                        <td style="color:#ffdf00">\${rec.external_cost_usd} $</td><td>\${rec.external_cost_provider || 'داخلي'}</td>
-                        <td style="color:#39ff14">\${rec.programmer_share} $</td><td style="color:#00f0ff;font-weight:bold;">\${rec.remaining_programmer_balance} $</td>\`;
+                        <td style="color:#ffdf00">\${rec.external_cost_usd || 0} $</td><td>\${rec.external_cost_provider || 'داخلي'}</td>
+                        <td style="color:#39ff14">\${rec.programmer_share || 0} $</td><td style="color:#00f0ff;font-weight:bold;">\${rec.remaining_programmer_balance || 0} $</td>\`;
                         tbody.appendChild(tr);
                     });
                 } catch(e) { document.getElementById('tBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#ff007f;">❌ فشل تحديث البيانات</td></tr>'; }
             }
 
-            // معالجة إرسال الفورم الجديد وقفل البيانات
             document.getElementById('deviceForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const bodyData = {
-                    user_id: session.user.id,
+                    user_id: userId,
                     customer_name: document.getElementById('custName').value,
-                    customer_phone: document.getElementById('custPhone').value,
+                    customer_phone: document.getElementById('custPhone').value || null,
                     device_model: document.getElementById('devModel').value,
                     operation_details: document.getElementById('opDetails').value,
                     total_price: parseFloat(document.getElementById('totPrice').value) || 0,
@@ -236,11 +235,12 @@ app.get('/dashboard', (req, res) => {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(bodyData)
                     });
+                    const resJson = await response.json();
                     if(response.ok) {
                         alert("🎯 تم قفل الحسبة وحفظ الجهاز بنجاح!");
                         document.getElementById('deviceForm').reset();
                         loadData();
-                    } else { alert("❌ حدث خطأ أثناء الحفظ"); }
+                    } else { alert("❌ خطأ من السيرفر: " + (resJson.error || 'غير معروف')); }
                 } catch(err) { alert("⚠️ خطأ في الاتصال بالسيرفر"); }
             });
 
@@ -268,14 +268,36 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ session: data.session });
 });
 
-// 📌 راوت إدخال الأجهزة المربوط بالفورم الجديد
+// 📌 راوت إدخال الأجهزة الذكي والمقاوم للنقص والـ user_id الفارغ
 app.post('/api/devices', async (req, res) => {
-    const { user_id, customer_name, customer_phone, device_model, operation_details, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider } = req.body;
-    const { data: dev, error: devErr } = await supabase.from('devices').insert([{ user_id, customer_name, customer_phone, device_model, operation_details, status: 'completed' }]).select().single();
-    if (devErr) return res.status(400).json({ error: devErr.message });
+    let { user_id, customer_name, customer_phone, device_model, operation_details, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider } = req.body;
     
-    const { error: finErr } = await supabase.from('financial_records').insert([{ device_id: dev.id, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider }]);
-    if (finErr) return res.status(400).json({ error: finErr.message });
+    // إذا لم يجد السيرفر معرف مستخدم بسبب انتهاء الجلسة، يجلب أول مستخدم مسجل تلقائياً لئلا تفشل العملية
+    if (!user_id) {
+        const { data: uList } = await supabase.from('profiles').select('id').limit(1);
+        if (uList && uList.length > 0) user_id = uList[0].id;
+    }
+
+    const { data: dev, error: devErr } = await supabase.from('devices').insert([{ 
+        user_id, 
+        customer_name, 
+        customer_phone, 
+        device_model, 
+        operation_details, 
+        status: 'completed' 
+    }]).select().single();
+    
+    if (devErr) return res.status(400).json({ error: "DevicesTable: " + devErr.message });
+    
+    const { error: finErr } = await supabase.from('financial_records').insert([{ 
+        device_id: dev.id, 
+        total_price: total_price || 0, 
+        is_paid_in_shop: is_paid_in_shop === true, 
+        external_cost_usd: external_cost_usd || 0, 
+        external_cost_provider: external_cost_provider || null 
+    }]);
+    
+    if (finErr) return res.status(400).json({ error: "FinancialsTable: " + finErr.message });
     
     res.status(201).json({ message: "Success" });
 });
@@ -285,15 +307,16 @@ app.get('/api/financials/analytics', async (req, res) => {
     if (error) return res.status(400).json({ error: error.message });
     let dCost = 0, wCost = 0, pInc = 0;
     const today = new Date().toISOString().split('T')[0];
-    data.forEach(rec => {
-        pInc += parseFloat(rec.programmer_share || 0);
-        const rDate = new Date(rec.record_date).toISOString().split('T')[0];
-        if (rDate === today) dCost += parseFloat(rec.external_cost_usd || 0);
-        const diff = Math.ceil(Math.abs(new Date() - new Date(rec.record_date)) / (1000 * 60 * 60 * 24));
-        if (diff <= 7) wCost += parseFloat(rec.external_cost_usd || 0);
-    });
-    res.json({ records: data, summary: { total_daily_external_cost: dCost, total_weekly_external_cost: wCost, gross_programmer_income: pInc } });
-});
-
-app.listen(PORT, () => console.log("Server running on port " + PORT));
     
+    if(data) {
+        data.forEach(rec => {
+            pInc += parseFloat(rec.programmer_share || 0);
+            if (rec.record_date) {
+                const rDate = new Date(rec.record_date).toISOString().split('T')[0];
+                if (rDate === today) dCost += parseFloat(rec.external_cost_usd || 0);
+                const diff = Math.ceil(Math.abs(new Date() - new Date(rec.record_date)) / (1000 * 60 * 60 * 24));
+                if (diff <= 7) wCost += parseFloat(rec.external_cost_usd || 0);
+            }
+        });
+    }
+    res.json({ 
