@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -24,7 +25,6 @@ app.get('/', (req, res) => {
             h2 { color:#fff; text-shadow:0 0 10px #00f0ff; margin-bottom:25px; }
             h2 span { color:#39ff14; }
             input { width:100%; padding:12px; background:#050508; border:1px solid #333; border-radius:4px; color:#fff; font-family:'Fira Code',monospace; margin-bottom:20px; box-sizing:border-box; }
-            input:focus { outline:none; border-color:#00f0ff; box-shadow:0 0 10px rgba(0,240,255,0.4); }
             button { width:100%; padding:12px; background:transparent; border:2px solid #39ff14; color:#39ff14; font-size:16px; font-weight:bold; cursor:pointer; border-radius:4px; text-shadow:0 0 5px #39ff14; }
             button:hover { background:#39ff14; color:#0a0a0f; box-shadow:0 0 15px #39ff14; }
             .link { display:block; margin-top:15px; color:#ff007f; text-decoration:none; font-size:13px; }
@@ -132,21 +132,16 @@ app.get('/dashboard', (req, res) => {
             .card.p { border-left-color:#39ff14; }
             .card.c { border-left-color:#ffdf00; }
             .val { font-size:18px; font-weight:bold; font-family:'Fira Code',monospace; margin-top:5px; }
-            
-            .form-box { background:#0d0d14; border:1px solid #00f0ff; padding:20px; border-radius:4px; margin-bottom:25px; box-shadow:0 0 10px rgba(0,240,255,0.1); }
+            .form-box { background:#0d0d14; border:1px solid #00f0ff; padding:20px; border-radius:4px; margin-bottom:25px; }
             .form-box h3 { margin-top:0; color:#00f0ff; font-size:16px; border-bottom:1px solid #1a1a26; padding-bottom:8px; }
-            .form-group { display:flex; flex-direction:column; }
+            .form-group { display:flex; flex-direction:column; margin-bottom:10px; }
             .form-group label { font-size:12px; color:#888; margin-bottom:4px; }
             .form-group input, .form-group select { padding:8px; background:#050508; border:1px solid #333; border-radius:4px; color:#fff; font-size:13px; }
-            .form-group input:focus, .form-group select:focus { outline:none; border-color:#00f0ff; }
-            .btn-add { grid-column: 1 / -1; padding:10px; background:transparent; border:2px solid #39ff14; color:#39ff14; font-weight:bold; cursor:pointer; border-radius:4px; margin-top:10px; text-shadow:0 0 5px #39ff14; width:100%; }
-            .btn-add:hover { background:#39ff14; color:#000; }
-
+            .btn-add { padding:10px; background:transparent; border:2px solid #39ff14; color:#39ff14; font-weight:bold; cursor:pointer; border-radius:4px; text-shadow:0 0 5px #39ff14; width:100%; }
             .table-box { background:#0d0d14; border:1px solid #1a1a26; border-radius:4px; overflow-x:auto; }
             table { width:100%; border-collapse:collapse; text-align:right; font-size:13px; }
             th, td { padding:12px; border-bottom:1px solid #1a1a26; white-space:nowrap; }
             th { background:#12121f; color:#00f0ff; }
-            tr:hover { background:#161622; }
         </style>
     </head>
     <body>
@@ -154,48 +149,37 @@ app.get('/dashboard', (req, res) => {
             <h1>طه فون // <span>DASHBOARD</span></h1>
             <button class="logout" onclick="localStorage.removeItem('taha_session'); window.location.href='/';">خروج</button>
         </header>
-
         <div class="grid">
             <div class="card p"><div style="color:#888;font-size:11px;">صافي أرباحك (50%)</div><div class="val" id="pInc">0.00 $</div></div>
             <div class="card c"><div style="color:#888;font-size:11px;">تكاليف اليوم</div><div class="val" id="dCost">0.00 $</div></div>
             <div class="card c"><div style="color:#888;font-size:11px;">تكاليف الأسبوع</div><div class="val" id="wCost">0.00 $</div></div>
         </div>
-
         <div class="form-box">
             <h3>➕ تسجيل عملية / جهاز جديد بالقاعدة</h3>
             <form id="deviceForm">
-                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom:0;">
+                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom:10px;">
                     <div class="form-group"><label>اسم الزبون</label><input type="text" id="custName" required placeholder="محمد أحمد"></div>
                     <div class="form-group"><label>رقم الجوال</label><input type="text" id="custPhone" placeholder="059xxxxxxx"></div>
                     <div class="form-group"><label>موديل الجهاز</label><input type="text" id="devModel" required placeholder="Poco X3 NFC"></div>
-                    <div class="form-group"><label>العملية (FRP / إصلاح)</label><input type="text" id="opDetails" required placeholder="فك حساب جوجل"></div>
+                    <div class="form-group"><label>العملية</label><input type="text" id="opDetails" required placeholder="فك حساب جوجل"></div>
                     <div class="form-group"><label>الحساب من الزبون ($)</label><input type="number" step="0.01" id="totPrice" required placeholder="20"></div>
-                    <div class="form-group"><label>تكلفة سيرفر خارجية ($)</label><input type="number" step="0.01" id="extCost" value="0" placeholder="5"></div>
+                    <div class="form-group"><label>تكلفة السيرفر ($)</label><input type="number" step="0.01" id="extCost" value="0"></div>
                     <div class="form-group"><label>المورد / السيرفر</label><input type="text" id="provider" placeholder="UnlockTool"></div>
-                    <div class="form-group"><label>حالة الدفع بالمحل</label>
-                        <select id="isPaid"><option value="true">تم الدفع كاملاً</option><option value="false">متبقي / دين</option></select>
-                    </div>
+                    <div class="form-group"><label>حالة الدفع</label><select id="isPaid"><option value="true">تم الدفع</option><option value="false">متبقي / دين</option></select></div>
                 </div>
-                <button type="submit" class="btn-add">إرسال البيانات وتشفير الحسبة في قاعدة البيانات 🚀</button>
+                <button type="submit" class="btn-add">إرسال البيانات وتشفير الحسبة 🚀</button>
             </form>
         </div>
-
         <div class="table-box">
             <table>
-                <thead>
-                    <tr><th>الزبون / الهاتف</th><th>الجهاز / العملية</th><th>الحالة</th><th>التكلفة</th><th>المورد</th><th>صافي ربحك</th><th>المتبقي في الذمة</th></tr>
-                </thead>
-                <tbody id="tBody"><tr><td colspan="7" style="text-align:center;color:#888;">جاري جلب السجلات الحية...</td></tr></tbody>
+                <thead><tr><th>الزبون</th><th>الجهاز</th><th>الحالة</th><th>التكلفة</th><th>المورد</th><th>ربحك</th><th>المتبقي</th></tr></thead>
+                <tbody id="tBody"><tr><td colspan="7" style="text-align:center;color:#888;">جاري جلب السجلات...</td></tr></tbody>
             </table>
         </div>
-
         <script>
             const sessionData = localStorage.getItem('taha_session');
             let userId = null;
-            if(sessionData) {
-                try { userId = JSON.parse(sessionData).user.id; } catch(e){}
-            }
-
+            if(sessionData) { try { userId = JSON.parse(sessionData).user.id; } catch(e){} }
             async function loadData() {
                 try {
                     const r = await fetch('/api/financials/analytics'); const data = await r.json();
@@ -203,7 +187,7 @@ app.get('/dashboard', (req, res) => {
                     document.getElementById('dCost').textContent = (data.summary.total_daily_external_cost || 0).toFixed(2) + ' $';
                     document.getElementById('wCost').textContent = (data.summary.total_weekly_external_cost || 0).toFixed(2) + ' $';
                     const tbody = document.getElementById('tBody'); tbody.innerHTML = '';
-                    if(!data.records || data.records.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">لا يوجد أجهزة مسجلة بعد.</td></tr>'; return; }
+                    if(!data.records || data.records.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">لا يوجد أجهزة مسجلة.</td></tr>'; return; }
                     data.records.forEach(rec => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = \`<td><strong>\· \${rec.customer_name || '-'}</strong><br><span style="color:#888;font-size:11px;">\${rec.customer_phone || '-'}</span></td>
@@ -215,7 +199,6 @@ app.get('/dashboard', (req, res) => {
                     });
                 } catch(e) { document.getElementById('tBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#ff007f;">❌ فشل تحديث البيانات</td></tr>'; }
             }
-
             document.getElementById('deviceForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const bodyData = {
@@ -229,21 +212,12 @@ app.get('/dashboard', (req, res) => {
                     external_cost_provider: document.getElementById('provider').value || null,
                     is_paid_in_shop: document.getElementById('isPaid').value === "true"
                 };
-
                 try {
-                    const response = await fetch('/api/devices', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bodyData)
-                    });
-                    const resJson = await response.json();
-                    if(response.ok) {
-                        alert("🎯 تم قفل الحسبة وحفظ الجهاز بنجاح!");
-                        document.getElementById('deviceForm').reset();
-                        loadData();
-                    } else { alert("❌ خطأ من السيرفر: " + (resJson.error || 'غير معروف')); }
-                } catch(err) { alert("⚠️ خطأ في الاتصال بالسيرفر"); }
+                    const response = await fetch('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyData) });
+                    if(response.ok) { alert("🎯 تم حفظ الجهاز وقفل الحسبة بنجاح!"); document.getElementById('deviceForm').reset(); loadData(); }
+                    else { alert("❌ فشل الحفظ في قاعدة البيانات"); }
+                } catch(err) { alert("⚠️ خطأ في الاتصال"); }
             });
-
             window.onload = loadData;
         </script>
     </body>
@@ -251,9 +225,7 @@ app.get('/dashboard', (req, res) => {
     `);
 });
 
-// ==========================================
-// ⚙️ معالجة البيانات والاتصال بسوبابيس (API)
-// ==========================================
+// APIs
 app.post('/api/auth/signup', async (req, res) => {
     const { email, password, full_name } = req.body;
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name } } });
@@ -268,36 +240,17 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ session: data.session });
 });
 
-// 📌 راوت إدخال الأجهزة الذكي والمقاوم للنقص والـ user_id الفارغ
 app.post('/api/devices', async (req, res) => {
     let { user_id, customer_name, customer_phone, device_model, operation_details, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider } = req.body;
-    
-    // إذا لم يجد السيرفر معرف مستخدم بسبب انتهاء الجلسة، يجلب أول مستخدم مسجل تلقائياً لئلا تفشل العملية
     if (!user_id) {
         const { data: uList } = await supabase.from('profiles').select('id').limit(1);
         if (uList && uList.length > 0) user_id = uList[0].id;
     }
-
-    const { data: dev, error: devErr } = await supabase.from('devices').insert([{ 
-        user_id, 
-        customer_name, 
-        customer_phone, 
-        device_model, 
-        operation_details, 
-        status: 'completed' 
-    }]).select().single();
+    const { data: dev, error: devErr } = await supabase.from('devices').insert([{ user_id, customer_name, customer_phone, device_model, operation_details, status: 'completed' }]).select().single();
+    if (devErr) return res.status(400).json({ error: devErr.message });
     
-    if (devErr) return res.status(400).json({ error: "DevicesTable: " + devErr.message });
-    
-    const { error: finErr } = await supabase.from('financial_records').insert([{ 
-        device_id: dev.id, 
-        total_price: total_price || 0, 
-        is_paid_in_shop: is_paid_in_shop === true, 
-        external_cost_usd: external_cost_usd || 0, 
-        external_cost_provider: external_cost_provider || null 
-    }]);
-    
-    if (finErr) return res.status(400).json({ error: "FinancialsTable: " + finErr.message });
+    const { error: finErr } = await supabase.from('financial_records').insert([{ device_id: dev.id, total_price, is_paid_in_shop, external_cost_usd, external_cost_provider }]);
+    if (finErr) return res.status(400).json({ error: finErr.message });
     
     res.status(201).json({ message: "Success" });
 });
@@ -307,7 +260,6 @@ app.get('/api/financials/analytics', async (req, res) => {
     if (error) return res.status(400).json({ error: error.message });
     let dCost = 0, wCost = 0, pInc = 0;
     const today = new Date().toISOString().split('T')[0];
-    
     if(data) {
         data.forEach(rec => {
             pInc += parseFloat(rec.programmer_share || 0);
@@ -319,4 +271,8 @@ app.get('/api/financials/analytics', async (req, res) => {
             }
         });
     }
-    res.json({ 
+    res.json({ records: data || [], summary: { total_daily_external_cost: dCost, total_weekly_external_cost: wCost, gross_programmer_income: pInc } });
+});
+
+app.listen(PORT, () => console.log("Server running on port " + PORT));
+        
