@@ -1,7 +1,7 @@
 {
   "name": "taha-phone-backend",
   "version": "1.0.0",
-  "description": "Backend System for Taha Phone Management",
+  "description": "Taha Phone Cyberpunk System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
